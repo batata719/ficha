@@ -3403,16 +3403,15 @@
       renderNotesAndTimeline();
     }
 
-    function rollSkillTest(skillName, customTitle = null, extraBonus = 0) {
-      const stats = calculateMaxStats();
-      const skillMeta = OFFICIAL_SKILLS.find(s => s.name === skillName);
-      const sData = state.skills[skillName] || { attr: 'INT', rank: 0, other: 0 };
-      const attrVal = state.attributes[sData.attr];
-      const penalty = (skillMeta?.armorPenalty && stats.heavyArmorEquipped) ? -5 : 0;
-      const bonus = sData.rank + (parseInt(sData.other) || 0) + penalty + (parseInt(extraBonus) || 0);
+    // ==================== DICE ROLLING ENGINE ====================
+    function rollDie(sides) {
+      return Math.floor(Math.random() * sides) + 1;
+    }
 
-      let diceCount = attrVal <= 0 ? 2 : attrVal;
-      let keepHighest = attrVal > 0;
+    function rollAttributeTest(attrKey, attrName) {
+      const attrVal = state.attributes[attrKey] || 0;
+      const diceCount = attrVal <= 0 ? 2 : attrVal;
+      const keepHighest = attrVal > 0;
 
       const rolls = [];
       for (let i = 0; i < diceCount; i++) rolls.push(rollDie(20));
@@ -3430,16 +3429,16 @@
       );
     }
 
-    function rollSkillTest(skillName, customTitle = null) {
+    function rollSkillTest(skillName, customTitle = null, extraBonus = 0) {
       const stats = calculateMaxStats();
       const skillMeta = OFFICIAL_SKILLS.find(s => s.name === skillName);
       const sData = state.skills[skillName] || { attr: 'INT', rank: 0, other: 0 };
-      const attrVal = state.attributes[sData.attr];
+      const attrVal = state.attributes[sData.attr] || 0;
       const penalty = (skillMeta?.armorPenalty && stats.heavyArmorEquipped) ? -5 : 0;
-      const bonus = sData.rank + (parseInt(sData.other) || 0) + penalty;
+      const bonus = sData.rank + (parseInt(sData.other) || 0) + penalty + (parseInt(extraBonus) || 0);
 
-      let diceCount = attrVal <= 0 ? 2 : attrVal;
-      let keepHighest = attrVal > 0;
+      const diceCount = attrVal <= 0 ? 2 : attrVal;
+      const keepHighest = attrVal > 0;
 
       const rolls = [];
       for (let i = 0; i < diceCount; i++) rolls.push(rollDie(20));
