@@ -94,6 +94,9 @@
             class="bg-void border border-borderSubtle focus:border-zinc-500 rounded-md px-2 py-1 text-xs text-white outline-none max-w-[170px]">
           </select>
         </div>
+        <button onclick="openRollHistoryModal()" class="px-2.5 py-1 rounded-md bg-elevated hover:bg-zinc-800 border border-borderSubtle text-zinc-200 transition flex items-center gap-1.5">
+          <span>📜</span> <span class="hidden sm:inline">Histórico</span> <span id="roll-history-count" class="font-mono text-[10px] px-1.5 py-0.2 rounded bg-void text-zinc-400">0</span>
+        </button>
         <button onclick="openDiceModal()" class="px-2.5 py-1 rounded-md bg-elevated hover:bg-zinc-800 border border-borderSubtle text-zinc-200 transition flex items-center gap-1.5">
           <span>🎲</span> <span>Rolador Livre</span>
         </button>
@@ -416,8 +419,8 @@
               <span class="block text-[9px] text-zinc-500 uppercase">Bloqueio (RD)</span>
               <span id="reaction-block" class="font-mono text-xs font-bold text-zinc-200">0</span>
             </div>
-            <button onclick="fullRest()" title="Restaurar PV, PE e SAN ao máximo" class="bg-elevated hover:bg-zinc-800 border border-borderSubtle rounded-lg py-1.5 px-1 text-[10px] font-medium text-zinc-300 transition">
-              ↻ Descanso
+            <button onclick="openInterludeModal()" title="Cenas de Interlúdio & Descanso" class="bg-elevated hover:bg-zinc-800 border border-borderSubtle rounded-lg py-1.5 px-1 text-[10px] font-medium text-zinc-300 transition">
+              🌙 Interlúdio
             </button>
           </div>
         </div>
@@ -1156,6 +1159,84 @@
     </div>
   </div>
 
+  <!-- MODAL: INTERLUDE & REST -->
+  <div id="modal-interlude" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+    <div class="bg-surface border border-borderSubtle rounded-2xl max-w-xl w-full p-6 space-y-4">
+      <div class="flex items-center justify-between border-b border-borderSubtle pb-3">
+        <div>
+          <h3 class="text-base font-semibold text-white">Cena de Interlúdio & Recuperação</h3>
+          <p class="text-xs text-zinc-400">Aplique recuperação automática baseada no seu Limite de PE/turno (<strong id="interlude-pe-lim" class="text-white font-mono">1</strong>)</p>
+        </div>
+        <button onclick="closeModal('modal-interlude')" class="text-zinc-400 hover:text-white text-lg">✕</button>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+        <div class="bg-void border border-borderSubtle rounded-xl p-3.5 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="font-semibold text-rose-400">Dormir (Condição Normal)</span>
+            <span class="font-mono text-[11px] text-zinc-400">1x Limite</span>
+          </div>
+          <p class="text-zinc-400">Recupera PV e PE iguais ao seu Limite de PE por turno.</p>
+          <button onclick="applyInterludeAction('sleep_normal')" class="w-full py-1.5 rounded-lg bg-elevated hover:bg-zinc-800 text-zinc-200 font-medium transition">
+            Recuperar PV & PE
+          </button>
+        </div>
+
+        <div class="bg-void border border-borderSubtle rounded-xl p-3.5 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="font-semibold text-emerald-400">Dormir (Confortável / Luxo)</span>
+            <span class="font-mono text-[11px] text-zinc-400">2x Limite</span>
+          </div>
+          <p class="text-zinc-400">Recupera o dobro do seu Limite de PE em PV e PE.</p>
+          <button onclick="applyInterludeAction('sleep_comfort')" class="w-full py-1.5 rounded-lg bg-elevated hover:bg-zinc-800 text-zinc-200 font-medium transition">
+            Recuperar Dobro
+          </button>
+        </div>
+
+        <div class="bg-void border border-borderSubtle rounded-xl p-3.5 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="font-semibold text-sky-400">Relaxar (Sanidade)</span>
+            <span class="font-mono text-[11px] text-zinc-400">1x Limite SAN</span>
+          </div>
+          <p class="text-zinc-400">Recupera Sanidade igual ao seu Limite de PE por turno.</p>
+          <button onclick="applyInterludeAction('relax')" class="w-full py-1.5 rounded-lg bg-elevated hover:bg-zinc-800 text-zinc-200 font-medium transition">
+            Recuperar SAN
+          </button>
+        </div>
+
+        <div class="bg-void border border-borderSubtle rounded-xl p-3.5 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="font-semibold accent-text">Descanso Completo</span>
+            <span class="font-mono text-[11px] text-zinc-400">100%</span>
+          </div>
+          <p class="text-zinc-400">Restaura PV, PE e Sanidade ao máximo da ficha.</p>
+          <button onclick="fullRest(); closeModal('modal-interlude');" class="w-full py-1.5 rounded-lg accent-soft-bg hover:brightness-125 border accent-border accent-text font-semibold transition">
+            Restaurar Tudo
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: ROLL HISTORY LOG -->
+  <div id="modal-roll-history" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+    <div class="bg-surface border border-borderSubtle rounded-2xl max-w-lg w-full p-6 flex flex-col max-h-[85vh] space-y-4">
+      <div class="flex items-center justify-between border-b border-borderSubtle pb-3">
+        <div>
+          <h3 class="text-base font-semibold text-white">Histórico de Rolagens & Ações</h3>
+          <p class="text-xs text-zinc-400">Últimos 40 testes, ataques, danos e conjurações desta sessão</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="clearRollHistory()" class="text-[11px] px-2.5 py-1 rounded bg-elevated hover:bg-zinc-800 text-zinc-400">Limpar</button>
+          <button onclick="closeModal('modal-roll-history')" class="text-zinc-400 hover:text-white text-lg px-1">✕</button>
+        </div>
+      </div>
+      <div id="roll-history-list" class="space-y-2 overflow-y-auto flex-1 pr-1">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+  </div>
+
   <!-- FLOATING DICE ROLL TOAST CONTAINER -->
   <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2.5 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
 
@@ -1723,31 +1804,59 @@
       const effectiveSpaces = Math.max(0, (parseFloat(item.spaces) || 0) + spaceMod);
       const effectiveDefense = (parseInt(item.defense) || 0) + defenseBonus;
 
-      // Compute effective damage string (e.g., 1d8 -> +1 die if calibre grosso -> 2d8, + damageBonus -> 2d8+2)
+      // Apply automatic Origin/Power weapon bonuses when rendering & rolling
+      let autoSkillBonus = 0;
+      let autoDamageBonus = 0;
+      let autoThreatBonus = 0;
+      let autoExtraDie = false;
+
+      if (item.type === 'Arma' && typeof state !== 'undefined' && state) {
+        const isMelee = item.skill === 'Luta';
+        const isFirearm = item.skill === 'Pontaria' && !/arco|besta|balestra/i.test(item.name);
+
+        if (state.origin === 'Lutador' && isMelee) autoDamageBonus += 2;
+        if (state.origin === 'Militar' && isFirearm) autoDamageBonus += 2;
+
+        if (Array.isArray(state.abilities)) {
+          state.abilities.forEach(ab => {
+            if (ab.name === 'Golpe Pesado' && isMelee) autoExtraDie = true;
+            if (ab.name === 'Balística Avançada' && isFirearm) autoDamageBonus += 2;
+            if (ab.name === 'Golpe de Sorte') autoThreatBonus += 1;
+          });
+        }
+        if (state.charClass === 'Combatente' && state.path === 'Guerreiro' && state.nex >= 10 && isMelee) {
+          autoThreatBonus += 2;
+        }
+      }
+
+      // Compute effective damage string (e.g., 1d8 -> +1 die if calibre grosso/golpe pesado -> 2d8, + damageBonus -> 2d8+2)
       let effectiveDamage = item.damage || '1d4';
       if (item.type === 'Arma') {
         const clean = effectiveDamage.replace(/\s+/g, '').toLowerCase();
         const match = clean.match(/^(\d+)d(\d+)([+-]\d+)?$/);
         if (match) {
-          let count = parseInt(match[1]) + (extraDamageDie ? 1 : 0);
+          let count = parseInt(match[1]) + (extraDamageDie ? 1 : 0) + (autoExtraDie ? 1 : 0);
           const sides = parseInt(match[2]);
-          const mod = (match[3] ? parseInt(match[3]) : 0) + damageBonus;
+          const mod = (match[3] ? parseInt(match[3]) : 0) + damageBonus + autoDamageBonus;
           effectiveDamage = `${count}d${sides}${mod > 0 ? '+' + mod : mod < 0 ? mod : ''}`;
-        } else if (damageBonus !== 0) {
-          effectiveDamage = `${effectiveDamage}${damageBonus > 0 ? '+' + damageBonus : damageBonus}`;
+        } else if ((damageBonus + autoDamageBonus) !== 0) {
+          const totalMod = damageBonus + autoDamageBonus;
+          effectiveDamage = `${effectiveDamage}${totalMod > 0 ? '+' + totalMod : totalMod}`;
         }
       }
 
       // Compute effective crit string (e.g., 19/x2 with +2 threat -> 17/x2)
       let effectiveCrit = item.crit || '20/x2';
-      if (item.type === 'Arma' && (threatBonus > 0 || critMultBonus > 0)) {
+      let critMultiplier = 2;
+      let critThreat = 20;
+      if (item.type === 'Arma') {
         const critMatch = effectiveCrit.match(/^(?:(\d+)\/)?x(\d+)$/i);
         if (critMatch) {
           const baseThreat = critMatch[1] ? parseInt(critMatch[1]) : 20;
           const baseMult = parseInt(critMatch[2]);
-          const newThreat = Math.max(2, baseThreat - threatBonus);
-          const newMult = baseMult + critMultBonus;
-          effectiveCrit = `${newThreat}/x${newMult}`;
+          critThreat = Math.max(2, baseThreat - threatBonus - autoThreatBonus);
+          critMultiplier = baseMult + critMultBonus + (typeof state !== 'undefined' && state?.abilities?.some(a => a.name === 'Golpe de Sorte' && a.affinity) ? 1 : 0);
+          effectiveCrit = `${critThreat}/x${critMultiplier}`;
         }
       }
 
@@ -1758,9 +1867,23 @@
         effectiveDefense,
         effectiveDamage,
         effectiveCrit,
-        attackBonus,
-        damageBonus
+        critMultiplier,
+        critThreat,
+        attackBonus: attackBonus + autoSkillBonus,
+        damageBonus: damageBonus + autoDamageBonus
       };
+    }
+
+    function getAutoSkillPassiveBonus(skillName) {
+      let bonus = 0;
+      if (!state || !Array.isArray(state.abilities)) return bonus;
+      state.abilities.forEach(ab => {
+        if (ab.name === 'Sensitivo' && ['Diplomacia', 'Intimidação', 'Intuição'].includes(skillName)) bonus += 5;
+        if (ab.name === 'Visão do Oculto' && skillName === 'Percepção') bonus += 5;
+        if (ab.name === 'Identificação Paranormal' && skillName === 'Ocultismo') bonus += 10;
+        if (ab.name === 'Gatuno' && ['Atletismo', 'Crime'].includes(skillName)) bonus += 5;
+      });
+      return bonus;
     }
 
     // ==================== MULTI-AGENT ROSTER & STATE MANAGEMENT ====================
@@ -2885,14 +3008,19 @@
                   <h4 class="font-semibold text-sm text-white">${w.name} ${modLabels ? `<span class="text-xs font-normal accent-text">(${modLabels})</span>` : ''}</h4>
                   <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-elevated text-zinc-300 shrink-0">Crit ${eff.effectiveCrit}</span>
                 </div>
-                <p class="text-xs text-zinc-400 mt-1">${w.skill} (${totalBonus >= 0 ? '+' + totalBonus : totalBonus}) • Dano: <strong class="text-zinc-200 font-mono">${eff.effectiveDamage}</strong></p>
+                <p class="text-xs text-zinc-400 font-mono mt-1">
+                  Perícia: <strong class="text-zinc-200">${w.skill} (${totalBonus >= 0 ? '+' + totalBonus : totalBonus})</strong> • Dano: <strong class="accent-text">${eff.effectiveDamage}</strong>
+                </p>
               </div>
-              <div class="grid grid-cols-2 gap-2">
+              <div class="grid grid-cols-3 gap-2">
                 <button onclick="rollSkillTest('${w.skill}', '${w.name} (Ataque)', ${eff.attackBonus})" class="py-1.5 rounded-lg bg-elevated hover:bg-zinc-800 text-xs font-medium text-zinc-200 transition">
                   🎯 Atacar
                 </button>
-                <button onclick="rollDamageFormula('${eff.effectiveDamage}', '${w.name} (Dano)')" class="py-1.5 rounded-lg accent-soft-bg hover:brightness-125 border accent-border text-xs font-medium accent-text transition">
+                <button onclick="rollDamageFormula('${eff.effectiveDamage}', '${w.name} (Dano)', 1)" class="py-1.5 rounded-lg accent-soft-bg hover:brightness-125 border accent-border text-xs font-medium accent-text transition">
                   💥 Dano
+                </button>
+                <button onclick="rollDamageFormula('${eff.effectiveDamage}', '${w.name} (CRÍTICO x${eff.critMultiplier})', ${eff.critMultiplier})" title="Rola o dano multiplicando os dados da arma por x${eff.critMultiplier}" class="py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-xs font-semibold text-amber-300 transition">
+                  ⚡ Crit x${eff.critMultiplier}
                 </button>
               </div>
             </div>
@@ -2919,7 +3047,8 @@
       tbody.innerHTML = filtered.map(skill => {
         const sData = state.skills[skill.name] || { attr: skill.attr, rank: 0, other: 0 };
         const penalty = (skill.armorPenalty && stats.heavyArmorEquipped) ? -5 : 0;
-        const total = sData.rank + (parseInt(sData.other) || 0) + penalty;
+        const autoPassive = getAutoSkillPassiveBonus(skill.name);
+        const total = sData.rank + (parseInt(sData.other) || 0) + penalty + autoPassive;
         const isTrained = sData.rank >= 5;
         const isOriginSkill = originSkills.includes(skill.name);
         const isClassSkill = classSkills.includes(skill.name);
@@ -2935,6 +3064,7 @@
                 ${isOriginSkill ? '<span class="text-[10px] px-1.5 py-0.2 rounded accent-soft-bg accent-text font-mono">Origem</span>' : ''}
                 ${isClassSkill ? '<span class="text-[10px] px-1.5 py-0.2 rounded bg-sky-500/15 text-sky-300 font-mono">Classe</span>' : ''}
                 ${!isMandatory && isTrained ? '<span class="text-[10px] px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-400 font-mono">Livre/INT</span>' : ''}
+                ${autoPassive > 0 ? `<span class="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-300 font-mono" title="Bônus automático de Poder">+${autoPassive} Poder</span>` : ''}
                 ${isPerito ? `<span class="text-[10px] px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-300 font-mono">Perito +${getPeritoDie()}</span>` : ''}
                 ${skill.trainedOnly ? '<span class="text-[10px] text-amber-400/80 font-mono" title="Somente Treinada">*</span>' : ''}
                 ${skill.armorPenalty ? '<span class="text-[10px] text-zinc-500 font-mono" title="Penalidade de Armadura">+</span>' : ''}
@@ -3071,6 +3201,11 @@
       } else {
         container.innerHTML = state.rituals.map(r => {
           const basePe = circlePe[String(r.circle)] || 1;
+          const discMatch = (r.discente || '').match(/\(\+(\d+)\s*PE\)/i);
+          const verdMatch = (r.verdadeira || '').match(/\(\+(\d+)\s*PE\)/i);
+          const discExtra = discMatch ? parseInt(discMatch[1]) : null;
+          const verdExtra = verdMatch ? parseInt(verdMatch[1]) : null;
+
           return `
             <div class="bg-void border border-borderSubtle rounded-2xl p-4 space-y-2.5">
               <div class="flex items-start justify-between gap-2">
@@ -3081,16 +3216,24 @@
                   </div>
                   <p class="text-[11px] text-zinc-400 mt-1 font-mono">${r.cast} • ${r.range} • ${r.duration}</p>
                 </div>
-                <div class="flex items-center gap-1.5">
-                  <button onclick="castRitual('${r.name}', ${basePe})" class="text-[11px] font-mono px-2.5 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 transition">
-                    Conjurar (-${basePe} PE)
+                <div class="flex items-center gap-1.5 flex-wrap justify-end">
+                  <button onclick="castRitual('${r.name}', ${basePe}, 'Padrão')" class="text-[11px] font-mono px-2.5 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 transition">
+                    Padrão (-${basePe} PE)
                   </button>
+                  ${discExtra !== null ? `
+                    <button onclick="castRitual('${r.name}', ${basePe + discExtra}, 'Discente')" class="text-[11px] font-mono px-2 py-1 rounded-lg bg-elevated hover:bg-zinc-800 text-zinc-200 border border-borderSubtle transition">
+                      Discente (-${basePe + discExtra})
+                    </button>` : ''}
+                  ${verdExtra !== null ? `
+                    <button onclick="castRitual('${r.name}', ${basePe + verdExtra}, 'Verdadeiro')" class="text-[11px] font-mono px-2 py-1 rounded-lg accent-soft-bg hover:brightness-125 accent-text border accent-border transition">
+                      Verdadeiro (-${basePe + verdExtra})
+                    </button>` : ''}
                   <button onclick="deleteRitual(${r.id})" class="text-zinc-500 hover:text-rose-400 text-xs px-1">✕</button>
                 </div>
               </div>
               <p class="text-xs text-zinc-300 leading-relaxed">${r.desc}</p>
-              ${r.discente ? `<div class="text-[11px] bg-surface border border-borderSubtle rounded-lg p-2 text-zinc-300"><strong class="text-amber-300">Discente:</strong> ${r.discente}</div>` : ''}
-              ${r.verdadeira ? `<div class="text-[11px] bg-surface border border-borderSubtle rounded-lg p-2 text-zinc-300"><strong class="accent-text">Verdadeiro:</strong> ${r.verdadeira}</div>` : ''}
+              ${r.discente && r.discente !== 'Nenhum.' ? `<div class="text-[11px] bg-surface border border-borderSubtle rounded-lg p-2 text-zinc-300"><strong class="text-amber-300">Discente:</strong> ${r.discente}</div>` : ''}
+              ${r.verdadeira && r.verdadeira !== 'Nenhum.' ? `<div class="text-[11px] bg-surface border border-borderSubtle rounded-lg p-2 text-zinc-300"><strong class="accent-text">Verdadeiro:</strong> ${r.verdadeira}</div>` : ''}
             </div>
           `;
         }).join('');
@@ -3099,15 +3242,17 @@
       renderRitualCompendium();
     }
 
-    function castRitual(name, peCost) {
+    function castRitual(name, peCost, form = 'Padrão') {
+      const stats = calculateMaxStats();
       if (state.currentPe < peCost) {
-        showToast('PE Insuficiente!', `Você precisa de ${peCost} PE para conjurar ${name}.`, '!');
+        showToast('PE Insuficiente!', `Você precisa de ${peCost} PE para conjurar ${name} (${form}).`, '!');
         return;
       }
+      const limitWarning = peCost > stats.peLimit ? ` ⚠️ Excede Limite/Turno (${stats.peLimit} PE)!` : '';
       state.currentPe -= peCost;
       saveState();
       refreshAll();
-      showToast(`Ritual Conjurado: ${name}`, `Gasto de ${peCost} PE (DT ${calculateMaxStats().ritualDt}).`, `-${peCost} PE`);
+      showToast(`Ritual (${form}): ${name}`, `Gasto de ${peCost} PE • DT ${stats.ritualDt}.${limitWarning}`, `-${peCost} PE`);
     }
 
     function renderRitualCompendium() {
@@ -3324,11 +3469,15 @@
         return `
           <div class="bg-void border border-borderSubtle rounded-xl p-4 flex flex-col justify-between gap-3">
             <div>
-              <div class="flex items-center justify-between gap-2 flex-wrap">
+              <div class="flex items-start justify-between gap-2">
                 <h4 class="font-semibold text-sm text-white">${p.name}</h4>
-                <span class="text-[10px] font-mono px-2 py-0.5 rounded ${isParanormal ? 'accent-soft-bg accent-text border accent-border' : 'bg-elevated text-zinc-300'}">${p.category}</span>
+                <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-elevated text-zinc-300 border border-borderSubtle shrink-0">${p.category}</span>
               </div>
-              <p class="text-[10px] font-mono text-zinc-500 mt-1">Pré-req: ${p.req} • Custo: ${p.cost}</p>
+              <div class="flex items-center gap-2 mt-1 text-[10px] font-mono text-zinc-400">
+                <span>Req: ${p.req}</span>
+                <span>•</span>
+                <span class="text-amber-300">${p.cost}</span>
+              </div>
               <p class="text-xs text-zinc-300 mt-2 leading-relaxed">${p.desc}</p>
               ${p.affinityDesc ? `<p class="text-[11px] accent-text mt-1.5">${p.affinityDesc}</p>` : ''}
             </div>
@@ -3339,8 +3488,8 @@
               </button>
               ${isParanormal ? `
                 <button onclick="addPowerFromCompendium(${globalIndex}, true)"
-                  class="px-3 py-1.5 rounded-lg accent-soft-bg hover:brightness-125 border accent-border text-xs font-medium accent-text transition">
-                  ★ Com Afinidade
+                  class="px-2.5 py-1.5 rounded-lg accent-soft-bg hover:brightness-125 border accent-border text-xs font-semibold accent-text transition">
+                  + c/ Afinidade
                 </button>` : ''}
             </div>
           </div>
@@ -3363,7 +3512,7 @@
       });
       saveState();
       refreshAll();
-      showToast('Poder Adicionado', `${p.name}${withAffinity ? ' (com Afinidade)' : ''} adicionado à ficha!`, 'OK');
+      showToast('Poder Adicionado', `${p.name}${withAffinity ? ' (com Afinidade)' : ''} adicionado à ficha!`, '+1');
     }
 
     function renderNotesAndTimeline() {
@@ -3374,20 +3523,18 @@
       document.getElementById('char-proficiencies').value = state.proficiencies || '';
       document.getElementById('char-notes').value = state.notes || '';
       document.getElementById('char-clues').value = state.clues || '';
-
       document.getElementById('timeline-current-nex').textContent = `${state.nex}%`;
-      document.getElementById('nex-timeline-grid').innerHTML = NEX_STEPS.map(n => {
-        const unlocked = state.nex >= n;
-        const isCurrent = state.nex === n;
+
+      const grid = document.getElementById('nex-timeline-grid');
+      grid.innerHTML = NEX_STEPS.map(step => {
+        const isCurrent = state.nex === step;
+        const isPassed = state.nex >= step;
         return `
-          <div onclick="updateField('nex', ${n})" title="Definir NEX ${n}%"
-            class="cursor-pointer rounded-xl p-2.5 border transition flex flex-col justify-between ${isCurrent ? 'accent-border accent-soft-bg' : unlocked ? 'bg-void border-zinc-700/80' : 'bg-void/40 border-borderSubtle/40 opacity-45'}">
-            <div class="flex items-center justify-between mb-1">
-              <span class="font-mono text-xs font-bold ${isCurrent ? 'accent-text' : unlocked ? 'text-white' : 'text-zinc-500'}">${n}%</span>
-              ${unlocked ? '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>' : ''}
-            </div>
-            <p class="text-[10px] leading-tight text-zinc-300">${NEX_MILESTONES[n]}</p>
-          </div>
+          <button onclick="updateField('nex', ${step})"
+            class="p-2.5 rounded-xl border text-left transition flex flex-col justify-between gap-1 ${isCurrent ? 'accent-border accent-soft-bg' : isPassed ? 'bg-void border-zinc-700' : 'bg-void/40 border-borderSubtle/50 opacity-55 hover:opacity-90'}">
+            <span class="font-mono text-xs font-bold ${isCurrent ? 'accent-text' : isPassed ? 'text-white' : 'text-zinc-400'}">${step}%</span>
+            <span class="text-[10px] text-zinc-400 leading-tight line-clamp-2">${NEX_MILESTONES[step] || 'Evolução'}</span>
+          </button>
         `;
       }).join('');
     }
@@ -3403,7 +3550,83 @@
       renderNotesAndTimeline();
     }
 
-    // ==================== DICE ROLLING ENGINE ====================
+    // ==================== DICE ROLLING ENGINE & SESSION LOG ====================
+    const sessionRollHistory = [];
+
+    function logSessionRoll(title, detail, result, isCrit = false, isFumble = false) {
+      const now = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      sessionRollHistory.unshift({
+        agent: state?.name || 'Agente',
+        time: now,
+        title,
+        detail: detail.replace(/<[^>]*>/g, ''),
+        result,
+        isCrit,
+        isFumble
+      });
+      if (sessionRollHistory.length > 40) sessionRollHistory.pop();
+      const badge = document.getElementById('roll-history-count');
+      if (badge) badge.textContent = sessionRollHistory.length;
+    }
+
+    function openRollHistoryModal() {
+      const list = document.getElementById('roll-history-list');
+      if (sessionRollHistory.length === 0) {
+        list.innerHTML = `<div class="text-center py-8 text-xs text-zinc-500">Nenhuma rolagem registrada nesta sessão ainda.</div>`;
+      } else {
+        list.innerHTML = sessionRollHistory.map(item => `
+          <div class="bg-void border ${item.isCrit ? 'border-amber-400/60' : item.isFumble ? 'border-rose-500/60' : 'border-borderSubtle'} rounded-xl p-3 flex items-center justify-between gap-3">
+            <div>
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="text-[10px] font-mono text-zinc-500">${item.time}</span>
+                <span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-surface text-zinc-300">${item.agent}</span>
+                <span class="text-xs font-semibold text-white">${item.title}</span>
+              </div>
+              <p class="text-xs font-mono text-zinc-400 mt-1">${item.detail}</p>
+            </div>
+            <span class="text-lg font-mono font-bold ${item.isCrit ? 'text-amber-300' : item.isFumble ? 'text-rose-400' : 'accent-text'} shrink-0">
+              ${item.result}
+            </span>
+          </div>
+        `).join('');
+      }
+      openModal('modal-roll-history');
+    }
+
+    function clearRollHistory() {
+      sessionRollHistory.length = 0;
+      const badge = document.getElementById('roll-history-count');
+      if (badge) badge.textContent = '0';
+      openRollHistoryModal();
+    }
+
+    function openInterludeModal() {
+      const stats = calculateMaxStats();
+      document.getElementById('interlude-pe-lim').textContent = stats.peLimit;
+      openModal('modal-interlude');
+    }
+
+    function applyInterludeAction(action) {
+      const stats = calculateMaxStats();
+      const lim = stats.peLimit;
+      if (action === 'sleep_normal') {
+        state.currentPv = Math.min(stats.maxPv, state.currentPv + lim);
+        state.currentPe = Math.min(stats.maxPe, state.currentPe + lim);
+        showToast('Interlúdio: Dormir', `Recuperou +${lim} PV e +${lim} PE.`, `+${lim}`);
+      } else if (action === 'sleep_comfort') {
+        const gain = lim * 2;
+        state.currentPv = Math.min(stats.maxPv, state.currentPv + gain);
+        state.currentPe = Math.min(stats.maxPe, state.currentPe + gain);
+        showToast('Interlúdio: Confortável', `Recuperou +${gain} PV e +${gain} PE.`, `+${gain}`);
+      } else if (action === 'relax') {
+        state.currentSan = Math.min(stats.maxSan, state.currentSan + lim);
+        showToast('Interlúdio: Relaxar', `Recuperou +${lim} de Sanidade.`, `+${lim} SAN`);
+      }
+      saveState();
+      refreshAll();
+      closeModal('modal-interlude');
+    }
+
     function rollDie(sides) {
       return Math.floor(Math.random() * sides) + 1;
     }
@@ -3435,7 +3658,8 @@
       const sData = state.skills[skillName] || { attr: 'INT', rank: 0, other: 0 };
       const attrVal = state.attributes[sData.attr] || 0;
       const penalty = (skillMeta?.armorPenalty && stats.heavyArmorEquipped) ? -5 : 0;
-      const bonus = sData.rank + (parseInt(sData.other) || 0) + penalty + (parseInt(extraBonus) || 0);
+      const autoPassive = getAutoSkillPassiveBonus(skillName);
+      const bonus = sData.rank + (parseInt(sData.other) || 0) + penalty + autoPassive + (parseInt(extraBonus) || 0);
 
       const diceCount = attrVal <= 0 ? 2 : attrVal;
       const keepHighest = attrVal > 0;
@@ -3458,11 +3682,11 @@
       );
     }
 
-    function rollDamageFormula(formula, label) {
-      rollCustomFormula(formula, label);
+    function rollDamageFormula(formula, label, critMult = 1) {
+      rollCustomFormula(formula, label, critMult);
     }
 
-    function rollCustomFormula(formula, label = 'Rolagem de Dados') {
+    function rollCustomFormula(formula, label = 'Rolagem de Dados', critMult = 1) {
       try {
         const clean = formula.replace(/\s+/g, '').toLowerCase();
         const match = clean.match(/^(\d+)d(\d+)([+-]\d+)?$/);
@@ -3470,7 +3694,8 @@
           showToast(label, `Fórmula inválida: ${formula}`, '!');
           return;
         }
-        const count = Math.min(50, parseInt(match[1]));
+        const baseCount = parseInt(match[1]);
+        const count = Math.min(80, baseCount * Math.max(1, critMult));
         const sides = parseInt(match[2]);
         const mod = match[3] ? parseInt(match[3]) : 0;
 
@@ -3479,13 +3704,14 @@
         const sum = rolls.reduce((a, b) => a + b, 0) + mod;
         const modStr = mod !== 0 ? (mod > 0 ? ` + ${mod}` : ` - ${Math.abs(mod)}`) : '';
 
-        showToast(label, `${count}d${sides}: [${rolls.join(', ')}]${modStr}`, sum);
+        showToast(label, `${count}d${sides}: [${rolls.join(', ')}]${modStr}`, sum, critMult > 1);
       } catch (e) {
         showToast(label, 'Erro ao processar rolagem', '!');
       }
     }
 
     function showToast(title, detail, result, isCrit = false, isFumble = false) {
+      logSessionRoll(title, detail, result, isCrit, isFumble);
       const container = document.getElementById('toast-container');
       const toast = document.createElement('div');
       const borderClass = isCrit ? 'border-amber-400' : isFumble ? 'border-rose-500' : 'accent-border';
