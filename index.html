@@ -1105,6 +1105,31 @@
     </div>
   </div>
 
+  <!-- MODAL: ITEM MODIFICATIONS / APRIMORAMENTOS -->
+  <div id="modal-item-mods" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+    <div class="bg-surface border border-borderSubtle rounded-2xl max-w-2xl w-full p-6 flex flex-col max-h-[90vh] space-y-4">
+      <div class="flex items-center justify-between border-b border-borderSubtle pb-3">
+        <div>
+          <h3 class="text-base font-semibold text-white">Aprimoramentos & Modificações: <span id="mod-modal-item-name" class="accent-text">Item</span></h3>
+          <p class="text-xs text-zinc-400">Cada modificação aplicada aumenta a categoria do item em +I e atualiza suas estatísticas automaticamente</p>
+        </div>
+        <button onclick="closeModal('modal-item-mods')" class="text-zinc-400 hover:text-white text-lg px-2">✕</button>
+      </div>
+
+      <div id="mod-modal-summary" class="bg-void border border-borderSubtle rounded-xl p-3 flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
+        <!-- Populated by JS -->
+      </div>
+
+      <div id="mod-modal-list" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 overflow-y-auto pr-1 flex-1">
+        <!-- Populated by JS -->
+      </div>
+
+      <div class="flex justify-end pt-2 border-t border-borderSubtle">
+        <button onclick="closeModal('modal-item-mods')" class="px-5 py-2 rounded-xl accent-bg text-white text-xs font-semibold">Concluir</button>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL: FREE DICE ROLLER -->
   <div id="modal-dice" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
     <div class="bg-surface border border-borderSubtle rounded-2xl max-w-sm w-full p-6 space-y-4">
@@ -1638,6 +1663,105 @@
       { name: '[Maldição Energia] Energética', type: 'Maldição', cat: 'II', spaces: 0, desc: 'Aumenta a categoria em +I. Concede +5 no ataque, converte todo dano em Energia e ignora RD.' },
       { name: '[Maldição Energia] Defesa', type: 'Maldição', cat: 'II', spaces: 0, desc: 'Aumenta a categoria em +I (Proteção). Concede +5 na Defesa e resistência 10 contra Energia.' }
     ];
+
+    const ITEM_MODIFICATIONS_DB = [
+      // Aprimoramentos de Arma (Oficiais)
+      { id: 'certeira', name: 'Certeira', target: 'Arma', attackBonus: 2, desc: '+2 nos testes de ataque com a arma.' },
+      { id: 'cruel', name: 'Cruel', target: 'Arma', damageBonus: 2, desc: '+2 nas rolagens de dano com a arma.' },
+      { id: 'perigosa', name: 'Perigosa', target: 'Arma', threatBonus: 2, desc: '+2 na margem de ameaça (ex: 19 vira 17).' },
+      { id: 'calibre_grosso', name: 'Calibre Grosso', target: 'Arma', extraDamageDie: true, desc: 'Aumenta o dano da arma de fogo em +1 dado do mesmo tipo (ex: 2d6 vira 3d6).' },
+      { id: 'alongada', name: 'Alongada', target: 'Arma', attackBonus: 2, desc: '+2 nos testes de ataque com arma de fogo e aumenta alcance.' },
+      { id: 'mira_laser', name: 'Mira Laser', target: 'Arma', threatBonus: 2, desc: '+2 na margem de ameaça com arma de fogo.' },
+      { id: 'mira_telescopica', name: 'Mira Telescópica', target: 'Arma', desc: 'Aumenta o alcance em um passo e permite mirar para ataque furtivo em qualquer alcance.' },
+      { id: 'compensador', name: 'Compensador', target: 'Arma', desc: 'Anula a penalidade de -1d20 ao fazer rajadas com armas automáticas.' },
+      { id: 'silenciador', name: 'Silenciador', target: 'Arma', desc: 'Reduz em -10 a penalidade de Furtividade por disparar.' },
+      { id: 'visao_calor', name: 'Visão de Calor', target: 'Arma', desc: 'Mira térmica que ignora camuflagem por escuridão, fumaça ou névoa.' },
+      { id: 'tatica', name: 'Tática', target: 'Arma', desc: 'Permite sacar a arma como ação livre.' },
+      { id: 'discreta', name: 'Discreta', target: 'Arma', spaceMod: -1, desc: 'Reduz os espaços ocupados em -1 e concede +5 em Crime para ocultar.' },
+      { id: 'ferrolho_automatico', name: 'Ferrolho Automático', target: 'Arma', desc: 'Converte arma de disparo semi-automática em automática (permite rajada).' },
+      { id: 'dum_dum', name: 'Munição Dum Dum', target: 'Munição/Explosivo', critMultBonus: 1, desc: '+1 no multiplicador de crítico (ex: x2 vira x3).' },
+      { id: 'explosiva', name: 'Munição Explosiva', target: 'Munição/Explosivo', desc: 'Causa +2d6 de dano de impacto ao acertar.' },
+      // Aprimoramentos de Proteção
+      { id: 'reforcada', name: 'Reforçada', target: 'Proteção', defenseBonus: 2, spaceMod: 1, desc: '+2 na Defesa fornecida pela proteção (+1 espaço).' },
+      { id: 'antibombas', name: 'Antibombas', target: 'Proteção', desc: '+5 em testes de resistência contra efeitos de área (apenas Proteção Pesada).' },
+      { id: 'blindada', name: 'Blindada', target: 'Proteção', desc: 'Aumenta a RD da proteção em +5 contra balístico, corte, impacto e perfuração (Pesada).' },
+      { id: 'discreta_prot', name: 'Discreta (Proteção)', target: 'Proteção', spaceMod: -1, desc: 'Pode ser usada sob roupas comuns sem chamar atenção (-1 espaço).' },
+      // Aprimoramentos de Acessórios / Gerais
+      { id: 'aprimorado', name: 'Aprimorado', target: 'Geral', desc: 'Aumenta o bônus de perícia de Utensílio ou Vestimenta de +2 para +5.' },
+      { id: 'instrumental', name: 'Instrumental', target: 'Geral', desc: 'O acessório passa a funcionar também como Kit de Perícia para uma perícia escolhida.' },
+      { id: 'funcao_adicional', name: 'Função Adicional', target: 'Geral', desc: 'Concede +2 em uma segunda perícia adicional.' }
+    ];
+
+    const CAT_ORDER = ['0', 'I', 'II', 'III', 'IV'];
+
+    function computeItemEffectiveStats(item) {
+      const modIds = Array.isArray(item.mods) ? item.mods : [];
+      const activeMods = modIds.map(id => ITEM_MODIFICATIONS_DB.find(m => m.id === id)).filter(Boolean);
+
+      const baseCatIdx = Math.max(0, CAT_ORDER.indexOf(item.cat || '0'));
+      const effectiveCatIdx = Math.min(4, baseCatIdx + activeMods.length);
+      const effectiveCat = CAT_ORDER[effectiveCatIdx];
+
+      let attackBonus = 0;
+      let damageBonus = 0;
+      let threatBonus = 0;
+      let critMultBonus = 0;
+      let extraDamageDie = false;
+      let defenseBonus = 0;
+      let spaceMod = 0;
+
+      activeMods.forEach(m => {
+        if (m.attackBonus) attackBonus += m.attackBonus;
+        if (m.damageBonus) damageBonus += m.damageBonus;
+        if (m.threatBonus) threatBonus += m.threatBonus;
+        if (m.critMultBonus) critMultBonus += m.critMultBonus;
+        if (m.extraDamageDie) extraDamageDie = true;
+        if (m.defenseBonus) defenseBonus += m.defenseBonus;
+        if (m.spaceMod) spaceMod += m.spaceMod;
+      });
+
+      const effectiveSpaces = Math.max(0, (parseFloat(item.spaces) || 0) + spaceMod);
+      const effectiveDefense = (parseInt(item.defense) || 0) + defenseBonus;
+
+      // Compute effective damage string (e.g., 1d8 -> +1 die if calibre grosso -> 2d8, + damageBonus -> 2d8+2)
+      let effectiveDamage = item.damage || '1d4';
+      if (item.type === 'Arma') {
+        const clean = effectiveDamage.replace(/\s+/g, '').toLowerCase();
+        const match = clean.match(/^(\d+)d(\d+)([+-]\d+)?$/);
+        if (match) {
+          let count = parseInt(match[1]) + (extraDamageDie ? 1 : 0);
+          const sides = parseInt(match[2]);
+          const mod = (match[3] ? parseInt(match[3]) : 0) + damageBonus;
+          effectiveDamage = `${count}d${sides}${mod > 0 ? '+' + mod : mod < 0 ? mod : ''}`;
+        } else if (damageBonus !== 0) {
+          effectiveDamage = `${effectiveDamage}${damageBonus > 0 ? '+' + damageBonus : damageBonus}`;
+        }
+      }
+
+      // Compute effective crit string (e.g., 19/x2 with +2 threat -> 17/x2)
+      let effectiveCrit = item.crit || '20/x2';
+      if (item.type === 'Arma' && (threatBonus > 0 || critMultBonus > 0)) {
+        const critMatch = effectiveCrit.match(/^(?:(\d+)\/)?x(\d+)$/i);
+        if (critMatch) {
+          const baseThreat = critMatch[1] ? parseInt(critMatch[1]) : 20;
+          const baseMult = parseInt(critMatch[2]);
+          const newThreat = Math.max(2, baseThreat - threatBonus);
+          const newMult = baseMult + critMultBonus;
+          effectiveCrit = `${newThreat}/x${newMult}`;
+        }
+      }
+
+      return {
+        activeMods,
+        effectiveCat,
+        effectiveSpaces,
+        effectiveDefense,
+        effectiveDamage,
+        effectiveCrit,
+        attackBonus,
+        damageBonus
+      };
+    }
 
     // ==================== MULTI-AGENT ROSTER & STATE MANAGEMENT ====================
     const ROSTER_STORAGE_KEY = 'op_agents_roster_v1';
@@ -2369,8 +2493,9 @@
       let backpackBonus = 0;
 
       state.inventory.forEach(item => {
+        const eff = computeItemEffectiveStats(item);
         if (item.type === 'Proteção' && item.equipped) {
-          armorDefense += (parseInt(item.defense) || 0);
+          armorDefense += eff.effectiveDefense;
           if (item.name.toLowerCase().includes('pesada')) heavyArmorEquipped = true;
         }
         if (item.name.toLowerCase().includes('mochila militar')) {
@@ -2382,7 +2507,7 @@
       const isTecnico = state.charClass === 'Especialista' && state.path === 'Técnico' && state.nex >= 10;
       const loadAttr = forca + (isTecnico ? int : 0);
       const maxSpaces = Math.max(2, loadAttr * 5) + backpackBonus;
-      const currentSpaces = state.inventory.reduce((acc, it) => acc + (parseFloat(it.spaces) || 0), 0);
+      const currentSpaces = state.inventory.reduce((acc, it) => acc + computeItemEffectiveStats(it).effectiveSpaces, 0);
       const isOverloaded = currentSpaces > maxSpaces;
 
       const defense = 10 + agi + armorDefense + originDefBonus + powerDefBonus + (state.defenseOther || 0) - (isOverloaded ? 5 : 0);
@@ -2750,21 +2875,23 @@
       } else {
         wContainer.innerHTML = weapons.map(w => {
           const skillData = state.skills[w.skill] || { attr: 'FOR', rank: 0, other: 0 };
-          const totalBonus = skillData.rank + (skillData.other || 0);
+          const eff = computeItemEffectiveStats(w);
+          const totalBonus = skillData.rank + (skillData.other || 0) + eff.attackBonus;
+          const modLabels = eff.activeMods.map(m => m.name).join(', ');
           return `
             <div class="bg-void border border-borderSubtle rounded-xl p-3.5 flex flex-col justify-between gap-3">
               <div>
-                <div class="flex items-center justify-between">
-                  <h4 class="font-semibold text-sm text-white">${w.name}</h4>
-                  <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-elevated text-zinc-300">Crit ${w.crit || '20/x2'}</span>
+                <div class="flex items-center justify-between gap-2">
+                  <h4 class="font-semibold text-sm text-white">${w.name} ${modLabels ? `<span class="text-xs font-normal accent-text">(${modLabels})</span>` : ''}</h4>
+                  <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-elevated text-zinc-300 shrink-0">Crit ${eff.effectiveCrit}</span>
                 </div>
-                <p class="text-xs text-zinc-400 mt-1">${w.skill} (${totalBonus >= 0 ? '+' + totalBonus : totalBonus}) • Dano: <strong class="text-zinc-200 font-mono">${w.damage || '1d4'}</strong></p>
+                <p class="text-xs text-zinc-400 mt-1">${w.skill} (${totalBonus >= 0 ? '+' + totalBonus : totalBonus}) • Dano: <strong class="text-zinc-200 font-mono">${eff.effectiveDamage}</strong></p>
               </div>
               <div class="grid grid-cols-2 gap-2">
-                <button onclick="rollSkillTest('${w.skill}', '${w.name} (Ataque)')" class="py-1.5 rounded-lg bg-elevated hover:bg-zinc-800 text-xs font-medium text-zinc-200 transition">
+                <button onclick="rollSkillTest('${w.skill}', '${w.name} (Ataque)', ${eff.attackBonus})" class="py-1.5 rounded-lg bg-elevated hover:bg-zinc-800 text-xs font-medium text-zinc-200 transition">
                   🎯 Atacar
                 </button>
-                <button onclick="rollDamageFormula('${w.damage || '1d4'}', '${w.name} (Dano)')" class="py-1.5 rounded-lg accent-soft-bg hover:brightness-125 border accent-border text-xs font-medium accent-text transition">
+                <button onclick="rollDamageFormula('${eff.effectiveDamage}', '${w.name} (Dano)')" class="py-1.5 rounded-lg accent-soft-bg hover:brightness-125 border accent-border text-xs font-medium accent-text transition">
                   💥 Dano
                 </button>
               </div>
@@ -3063,7 +3190,8 @@
       const limits = PATENT_LIMITS[state.rank] || PATENT_LIMITS['Recruta'];
       const catCounts = { I: 0, II: 0, III: 0, IV: 0 };
       state.inventory.forEach(it => {
-        if (catCounts[it.cat] !== undefined) catCounts[it.cat]++;
+        const effCat = computeItemEffectiveStats(it).effectiveCat;
+        if (catCounts[effCat] !== undefined) catCounts[effCat]++;
       });
 
       document.getElementById('category-limits-grid').innerHTML = ['I', 'II', 'III', 'IV'].map(cat => {
@@ -3083,26 +3211,39 @@
         tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-xs text-zinc-500">Mochila vazia. Adicione equipamentos no catálogo abaixo.</td></tr>`;
       } else {
         tbody.innerHTML = state.inventory.map(it => {
+          const eff = computeItemEffectiveStats(it);
+          const modBadges = eff.activeMods.map(m =>
+            `<span class="inline-block text-[10px] font-mono px-1.5 py-0.2 rounded accent-soft-bg accent-text border accent-border mr-1">${m.name}</span>`
+          ).join('');
+
           let details = it.desc || '-';
           if (it.type === 'Arma') {
-            details = `<span class="font-mono text-zinc-200">${it.skill} • Dano ${it.damage} (${it.crit})</span> — ${it.desc || ''}`;
+            const atkTag = eff.attackBonus > 0 ? ` (+${eff.attackBonus} Atq)` : '';
+            details = `<span class="font-mono text-zinc-200">${it.skill}${atkTag} • Dano ${eff.effectiveDamage} (${eff.effectiveCrit})</span> — ${it.desc || ''}`;
           } else if (it.type === 'Proteção') {
-            details = `<span class="font-mono text-sky-300">+${it.defense} Defesa</span> — ${it.desc || ''}`;
+            details = `<span class="font-mono text-sky-300">+${eff.effectiveDefense} Defesa</span> — ${it.desc || ''}`;
           }
 
           return `
             <tr class="hover:bg-elevated/40 transition">
-              <td class="py-2.5 px-3 font-medium text-white">${it.name}</td>
+              <td class="py-2.5 px-3">
+                <div class="font-medium text-white">${it.name}</div>
+                ${modBadges ? `<div class="mt-1 flex flex-wrap gap-1">${modBadges}</div>` : ''}
+              </td>
               <td class="py-2.5 px-2 text-center text-xs text-zinc-400">${it.type}</td>
-              <td class="py-2.5 px-2 text-center font-mono text-xs text-zinc-300">${it.cat}</td>
-              <td class="py-2.5 px-2 text-center font-mono text-xs text-zinc-300">${it.spaces}</td>
+              <td class="py-2.5 px-2 text-center font-mono text-xs ${eff.effectiveCat !== it.cat ? 'accent-text font-bold' : 'text-zinc-300'}">${eff.effectiveCat}</td>
+              <td class="py-2.5 px-2 text-center font-mono text-xs text-zinc-300">${eff.effectiveSpaces}</td>
               <td class="py-2.5 px-3 text-xs text-zinc-400">${details}</td>
-              <td class="py-2.5 px-3 text-right space-x-2 whitespace-nowrap">
+              <td class="py-2.5 px-3 text-right space-x-1.5 whitespace-nowrap">
+                <button onclick="openItemModsModal(${it.id})" title="Aplicar Aprimoramentos (Cruel, Certeira, Perigosa...)"
+                  class="text-[11px] px-2 py-0.5 rounded bg-elevated hover:bg-zinc-700 border border-borderSubtle text-zinc-200 transition">
+                  ⚙ Aprimorar${eff.activeMods.length ? ` (${eff.activeMods.length})` : ''}
+                </button>
                 ${it.type === 'Proteção' ? `
                   <button onclick="toggleEquipItem(${it.id})" class="text-[11px] px-2 py-0.5 rounded ${it.equipped ? 'bg-emerald-500/15 text-emerald-300' : 'bg-elevated text-zinc-400'}">
                     ${it.equipped ? 'Equipada' : 'Equipar'}
                   </button>` : ''}
-                <button onclick="deleteItem(${it.id})" class="text-zinc-500 hover:text-rose-400 text-xs">✕</button>
+                <button onclick="deleteItem(${it.id})" class="text-zinc-500 hover:text-rose-400 text-xs px-1">✕</button>
               </td>
             </tr>
           `;
@@ -3262,13 +3403,14 @@
       renderNotesAndTimeline();
     }
 
-    // ==================== DICE ROLLER ENGINE ====================
-    function rollDie(sides) {
-      return Math.floor(Math.random() * sides) + 1;
-    }
+    function rollSkillTest(skillName, customTitle = null, extraBonus = 0) {
+      const stats = calculateMaxStats();
+      const skillMeta = OFFICIAL_SKILLS.find(s => s.name === skillName);
+      const sData = state.skills[skillName] || { attr: 'INT', rank: 0, other: 0 };
+      const attrVal = state.attributes[sData.attr];
+      const penalty = (skillMeta?.armorPenalty && stats.heavyArmorEquipped) ? -5 : 0;
+      const bonus = sData.rank + (parseInt(sData.other) || 0) + penalty + (parseInt(extraBonus) || 0);
 
-    function rollAttributeTest(attrKey, attrName) {
-      const attrVal = state.attributes[attrKey];
       let diceCount = attrVal <= 0 ? 2 : attrVal;
       let keepHighest = attrVal > 0;
 
@@ -3529,6 +3671,77 @@
     function deleteItem(id) {
       state.inventory = state.inventory.filter(i => i.id !== id);
       saveState();
+      refreshAll();
+    }
+
+    let currentModItemId = null;
+    function openItemModsModal(itemId) {
+      currentModItemId = itemId;
+      renderItemModsModal();
+      openModal('modal-item-mods');
+    }
+
+    function renderItemModsModal() {
+      const item = state.inventory.find(i => i.id === currentModItemId);
+      if (!item) return;
+
+      if (!Array.isArray(item.mods)) item.mods = [];
+      const eff = computeItemEffectiveStats(item);
+
+      document.getElementById('mod-modal-item-name').textContent = item.name;
+
+      let statSnippet = '';
+      if (item.type === 'Arma') {
+        statSnippet = `<span>Dano: <strong class="text-white">${eff.effectiveDamage}</strong></span> • <span>Crítico: <strong class="text-white">${eff.effectiveCrit}</strong></span>${eff.attackBonus ? ` • <span class="text-emerald-400">+${eff.attackBonus} Ataque</span>` : ''}`;
+      } else if (item.type === 'Proteção') {
+        statSnippet = `<span>Defesa: <strong class="text-sky-300">+${eff.effectiveDefense}</strong></span>`;
+      }
+
+      document.getElementById('mod-modal-summary').innerHTML = `
+        <div class="flex items-center gap-3 flex-wrap">
+          <span>Categoria: <strong class="text-zinc-400">${item.cat}</strong> → <strong class="accent-text">${eff.effectiveCat}</strong></span>
+          <span>Espaços: <strong class="text-white">${eff.effectiveSpaces}</strong></span>
+          ${statSnippet}
+        </div>
+        <span class="text-zinc-400">${item.mods.length} modificação(ões)</span>
+      `;
+
+      const relevantMods = ITEM_MODIFICATIONS_DB.filter(m =>
+        m.target === item.type || (item.type !== 'Arma' && item.type !== 'Proteção' && m.target === 'Geral')
+      );
+      const displayMods = relevantMods.length > 0 ? relevantMods : ITEM_MODIFICATIONS_DB;
+
+      document.getElementById('mod-modal-list').innerHTML = displayMods.map(mod => {
+        const isApplied = item.mods.includes(mod.id);
+        return `
+          <div onclick="toggleItemModification('${mod.id}')"
+            class="cursor-pointer rounded-xl p-3 border transition flex flex-col justify-between gap-1.5 ${isApplied ? 'accent-border accent-soft-bg' : 'bg-void border-borderSubtle hover:border-zinc-600'}">
+            <div class="flex items-center justify-between gap-2">
+              <span class="font-semibold text-sm ${isApplied ? 'text-white' : 'text-zinc-200'}">${mod.name}</span>
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded ${isApplied ? 'accent-bg text-white font-bold' : 'bg-elevated text-zinc-400'}">
+                ${isApplied ? '✓ Aplicado (+I)' : '+ Aplicar (+I)'}
+              </span>
+            </div>
+            <p class="text-xs text-zinc-400 leading-relaxed">${mod.desc}</p>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function toggleItemModification(modId) {
+      const item = state.inventory.find(i => i.id === currentModItemId);
+      if (!item) return;
+      if (!Array.isArray(item.mods)) item.mods = [];
+
+      const idx = item.mods.indexOf(modId);
+      if (idx >= 0) {
+        item.mods.splice(idx, 1);
+      } else {
+        item.mods.push(modId);
+      }
+
+      saveState();
+      renderItemModsModal();
       refreshAll();
     }
 
