@@ -26,9 +26,9 @@ import {
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // ============================================================================
-// 1. COLE AQUI AS CREDENCIAIS DO SEU PROJETO FIREBASE (Veja o Tutorial!)
+// 1. CREDENCIAIS DO SEU PROJETO FIREBASE (CONFIGURADO!)
 // ============================================================================
-const firebaseConfig = {
+const FIREBASE_CONFIG = {
   apiKey: "AIzaSyDKc688y119WyFzE5yGmxkaeYQBtLlI3FM",
   authDomain: "ordo-realitas-mesa.firebaseapp.com",
   projectId: "ordo-realitas-mesa",
@@ -125,6 +125,26 @@ window.addEventListener("storage", (e) => {
     renderSessionModalBody();
   }
 });
+
+// Observa as rolagens exibidas nos toasts da ficha e transmite ao vivo para o Mestre
+function setupRollObserver() {
+  const toastContainer = document.getElementById("toast-container");
+  if (!toastContainer) return;
+
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      mutation.addedNodes.forEach((node) => {
+        if (node.nodeType === 1 && sessionState.roomCode) {
+          const title = node.querySelector("span.text-xs.font-semibold")?.textContent?.trim() || "Rolagem";
+          const detail = node.querySelector("p.text-xs.font-mono")?.textContent?.trim() || "";
+          const resultEl = node.querySelector("div.text-2xl.font-mono");
+          const result = resultEl?.textContent?.trim() || "";
+          const isCrit = node.classList.contains("border-amber-400");
+          const isFumble = node.classList.contains("border-rose-500");
+
+          if (result) {
+            broadcastRollToRoom({ title, detail, result, isCrit, isFumble });
+          }
         }
       });
     });
