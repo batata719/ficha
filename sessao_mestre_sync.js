@@ -28,13 +28,13 @@ import {
 // ============================================================================
 // 1. COLE AQUI AS CREDENCIAIS DO SEU PROJETO FIREBASE (Veja o Tutorial!)
 // ============================================================================
-const firebaseConfig = {
-  apiKey: "AIzaSyDKc688y119WyFzE5yGmxkaeYQBtLlI3FM",
-  authDomain: "ordo-realitas-mesa.firebaseapp.com",
-  projectId: "ordo-realitas-mesa",
-  storageBucket: "ordo-realitas-mesa.firebasestorage.app",
-  messagingSenderId: "1049343664232",
-  appId: "1:1049343664232:web:00818b1ce7f88101931bdd"
+const FIREBASE_CONFIG = {
+  apiKey: "SUA_API_KEY_AQUI",
+  authDomain: "SEU_PROJETO.firebaseapp.com",
+  projectId: "SEU_PROJETO_ID",
+  storageBucket: "SEU_PROJETO.appspot.com",
+  messagingSenderId: "SEU_SENDER_ID",
+  appId: "SEU_APP_ID"
 };
 
 // ============================================================================
@@ -44,6 +44,7 @@ let db = null;
 let auth = null;
 let currentUser = null;
 let firebaseReady = false;
+let localDemoMode = false;
 
 const SESSION_META_KEY = "op_multiplayer_session_v1";
 let sessionState = loadSessionMeta();
@@ -72,8 +73,9 @@ function saveSessionMeta() {
 
 async function initFirebaseSync() {
   if (!FIREBASE_CONFIG.apiKey || FIREBASE_CONFIG.apiKey === "SUA_API_KEY_AQUI") {
-    console.warn("[Ordo Sync] Configure suas credenciais FIREBASE_CONFIG em sessao_mestre_sync.js.");
-    return false;
+    localDemoMode = true;
+    console.warn("[Ordo Sync] FIREBASE_CONFIG não configurado — ativando Modo Local de Demonstração (funciona entre abas do mesmo navegador).");
+    return true;
   }
   try {
     const app = initializeApp(FIREBASE_CONFIG);
@@ -82,6 +84,7 @@ async function initFirebaseSync() {
     const cred = await signInAnonymously(auth);
     currentUser = cred.user;
     firebaseReady = true;
+    localDemoMode = false;
     updateConnectionBadge();
 
     // Reconecta automaticamente se já estava em uma sala antes de recarregar
@@ -94,6 +97,7 @@ async function initFirebaseSync() {
     return true;
   } catch (err) {
     console.error("[Ordo Sync] Falha ao conectar no Firebase:", err);
+    alertModalInfo(`Erro no Firebase: ${err.message || "Verifique se a Autenticação Anônima e o Firestore estão ativados."}`);
     return false;
   }
 }
@@ -114,27 +118,13 @@ localStorage.setItem = function (key, value) {
   }
 };
 
-// Também observa o container de toasts para transmitir rolagens ao vivo para o Mestre!
-function setupRollObserver() {
-  const toastContainer = document.getElementById("toast-container");
-  if (!toastContainer) return;
-
-  const observer = new MutationObserver((mutations) => {
-    if (!firebaseReady || !sessionState.roomCode || sessionState.role !== "player") return;
-
-    mutations.forEach((m) => {
-      m.addedNodes.forEach((node) => {
-        if (node.nodeType === 1) {
-          const title = node.querySelector("span.text-xs.font-semibold")?.textContent || "Rolagem";
-          const detail = node.querySelector("p.text-xs.font-mono")?.textContent || "";
-          const result = node.querySelector("div.text-2xl.font-mono")?.textContent?.trim() || "";
-          const isCrit = node.className.includes("border-amber-400");
-          const isFumble = node.className.includes("border-rose-500");
-
-          // Ignora toasts administrativos do próprio sistema
-          if (title.includes("Sessão") || title.includes("Salvo") || title.includes("Exportação")) return;
-
-          broadcastRollToRoom({ title, detail, result, isCrit, isFumble });
+// Sincroniza também entre abas no Modo Local de Demonstração
+window.addEventListener("storage", (e) => {
+  if (localDemoMode && sessionState.roomCode && e.key && e.key.startsWith(`op_demo_room_${sessionState.roomCode}`)) {
+    loadLocalDemoRoomData(sessionState.roomCode);
+    renderSessionModalBody();
+  }
+});
         }
       });
     });
@@ -155,35 +145,57 @@ function getCurrentLocalAgent() {
 }
 
 async function pushActiveAgentToRoom() {
-  if (!firebaseReady || !currentUser || !sessionState.roomCode || sessionState.role !== "player") return;
+  if (!sessionState.roomCode || sessionState.role !== "player") return;
   const activeAgent = getCurrentLocalAgent();
   if (!activeAgent) return;
 
+  const payload = {
+    ...activeAgent,
+    ownerUid: currentUser?.uid || "local_player",
+    playerAlias: sessionState.playerAlias || activeAgent.player || "Jogador",
+    syncedAt: Date.now()
+  };
+
+  if (localDemoMode) {
+    const key = `op_demo_room_${sessionState.roomCode}_agents`;
+    const list = JSON.parse(localStorage.getItem(key) || "[]").filter(a => a.id !== activeAgent.id);
+    list.push(payload);
+    originalSetItem(key, JSON.stringify(list));
+    return;
+  }
+
+  if (!firebaseReady || !currentUser) return;
   try {
     const agentDocRef = doc(db, "sessions", sessionState.roomCode, "agents", activeAgent.id);
-    await setDoc(agentDocRef, {
-      ...activeAgent,
-      ownerUid: currentUser.uid,
-      playerAlias: sessionState.playerAlias || activeAgent.player || "Jogador",
-      syncedAt: Date.now()
-    });
+    await setDoc(agentDocRef, payload);
   } catch (err) {
     console.error("[Ordo Sync] Erro ao enviar ficha:", err);
   }
 }
 
 async function broadcastRollToRoom(rollPayload) {
-  if (!firebaseReady || !currentUser || !sessionState.roomCode) return;
+  if (!sessionState.roomCode) return;
   const activeAgent = getCurrentLocalAgent();
   const rollId = `roll_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+  const entry = {
+    ...rollPayload,
+    agentName: activeAgent?.name || "Agente",
+    playerAlias: sessionState.playerAlias || activeAgent?.player || "Jogador",
+    timestamp: Date.now()
+  };
+
+  if (localDemoMode) {
+    const key = `op_demo_room_${sessionState.roomCode}_rolls`;
+    const list = JSON.parse(localStorage.getItem(key) || "[]");
+    list.unshift(entry);
+    originalSetItem(key, JSON.stringify(list.slice(0, 25)));
+    return;
+  }
+
+  if (!firebaseReady || !currentUser) return;
   try {
     const rollRef = doc(db, "sessions", sessionState.roomCode, "rolls", rollId);
-    await setDoc(rollRef, {
-      ...rollPayload,
-      agentName: activeAgent?.name || "Agente",
-      playerAlias: sessionState.playerAlias || activeAgent?.player || "Jogador",
-      timestamp: Date.now()
-    });
+    await setDoc(rollRef, entry);
   } catch (err) {
     console.error("[Ordo Sync] Erro ao transmitir rolagem:", err);
   }
@@ -199,96 +211,153 @@ function generateRoomCode() {
   return code;
 }
 
+function loadLocalDemoRoomData(roomCode) {
+  roomAgentsCache = JSON.parse(localStorage.getItem(`op_demo_room_${roomCode}_agents`) || "[]");
+  roomRollsCache = JSON.parse(localStorage.getItem(`op_demo_room_${roomCode}_rolls`) || "[]");
+}
+
 async function createSessionAsGM() {
-  if (!firebaseReady) {
-    const ok = await initFirebaseSync();
-    if (!ok) {
-      alertModalInfo("Configure suas chaves do Firebase no arquivo sessao_mestre_sync.js primeiro (veja o tutorial).");
-      return;
-    }
+  const btn = document.getElementById("btn-create-gm-room");
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "⏳ Criando sala...";
   }
 
-  const campaignName = document.getElementById("sync-campaign-name")?.value.trim() || "Missão Ordo Realitas";
-  const roomCode = generateRoomCode();
-  const gmSecret = Math.random().toString(36).substring(2, 10);
+  try {
+    if (!firebaseReady && !localDemoMode) {
+      const ok = await initFirebaseSync();
+      if (!ok) return;
+    }
 
-  const roomRef = doc(db, "sessions", roomCode);
-  await setDoc(roomRef, {
-    roomCode,
-    campaignName,
-    gmUid: currentUser.uid,
-    gmSecret,
-    createdAt: serverTimestamp()
-  });
+    const campaignName = document.getElementById("sync-campaign-name")?.value.trim() || "Missão Ordo Realitas";
+    const roomCode = generateRoomCode();
+    const gmSecret = Math.random().toString(36).substring(2, 10);
 
-  sessionState = {
-    roomCode,
-    role: "gm",
-    gmSecret,
-    playerAlias: "Mestre"
-  };
-  saveSessionMeta();
-  updateConnectionBadge();
-  connectToRoomListeners(roomCode);
-  renderSessionModalBody();
+    if (localDemoMode) {
+      originalSetItem(`op_demo_room_${roomCode}_meta`, JSON.stringify({ roomCode, campaignName, gmSecret }));
+      alertModalInfo("Modo Teste Local ativo (chaves do Firebase ainda não configuradas). Abra outra aba deste site e entre com o código gerado para testar!");
+    } else {
+      const roomRef = doc(db, "sessions", roomCode);
+      await setDoc(roomRef, {
+        roomCode,
+        campaignName,
+        gmUid: currentUser.uid,
+        gmSecret,
+        createdAt: serverTimestamp()
+      });
+    }
+
+    sessionState = {
+      roomCode,
+      role: "gm",
+      gmSecret,
+      playerAlias: "Mestre"
+    };
+    saveSessionMeta();
+    updateConnectionBadge();
+    connectToRoomListeners(roomCode);
+    renderSessionModalBody();
+  } catch (err) {
+    console.error("[Ordo Sync] Erro ao criar sala:", err);
+    alertModalInfo(`Não foi possível criar a sala: ${err.message || "Verifique as regras do Firestore."}`);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = "Criar Sala como Mestre →";
+    }
+  }
 }
 
 async function joinSessionAsPlayer() {
-  if (!firebaseReady) {
-    const ok = await initFirebaseSync();
-    if (!ok) {
-      alertModalInfo("Configure suas chaves do Firebase no arquivo sessao_mestre_sync.js primeiro.");
+  const btn = document.getElementById("btn-join-player-room");
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "⏳ Conectando...";
+  }
+
+  try {
+    if (!firebaseReady && !localDemoMode) {
+      const ok = await initFirebaseSync();
+      if (!ok) return;
+    }
+
+    const codeInput = (document.getElementById("sync-join-code")?.value || "").trim().toUpperCase();
+    const aliasInput = (document.getElementById("sync-player-alias")?.value || "").trim();
+
+    if (codeInput.length < 4) {
+      alertModalInfo("Digite um código de sala válido (ex: A7K9P2).");
       return;
     }
+
+    if (localDemoMode) {
+      const meta = localStorage.getItem(`op_demo_room_${codeInput}_meta`);
+      if (!meta) {
+        alertModalInfo(`Sala local "${codeInput}" não encontrada neste navegador.`);
+        return;
+      }
+    } else {
+      const roomRef = doc(db, "sessions", codeInput);
+      const snap = await getDoc(roomRef);
+      if (!snap.exists()) {
+        alertModalInfo(`Sala "${codeInput}" não encontrada. Verifique o código com o Mestre.`);
+        return;
+      }
+    }
+
+    sessionState = {
+      roomCode: codeInput,
+      role: "player",
+      gmSecret: null,
+      playerAlias: aliasInput || "Agente"
+    };
+    saveSessionMeta();
+    updateConnectionBadge();
+    connectToRoomListeners(codeInput);
+    await pushActiveAgentToRoom();
+    renderSessionModalBody();
+  } catch (err) {
+    alertModalInfo(`Erro ao entrar na sala: ${err.message || err}`);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = "Conectar Ficha Ativa →";
+    }
   }
-
-  const codeInput = (document.getElementById("sync-join-code")?.value || "").trim().toUpperCase();
-  const aliasInput = (document.getElementById("sync-player-alias")?.value || "").trim();
-
-  if (codeInput.length < 4) {
-    alertModalInfo("Digite um código de sala válido (ex: A7K9P2).");
-    return;
-  }
-
-  const roomRef = doc(db, "sessions", codeInput);
-  const snap = await getDoc(roomRef);
-  if (!snap.exists()) {
-    alertModalInfo(`Sala "${codeInput}" não encontrada. Verifique o código com o Mestre.`);
-    return;
-  }
-
-  sessionState = {
-    roomCode: codeInput,
-    role: "player",
-    gmSecret: null,
-    playerAlias: aliasInput || "Agente"
-  };
-  saveSessionMeta();
-  updateConnectionBadge();
-  connectToRoomListeners(codeInput);
-  await pushActiveAgentToRoom();
-  renderSessionModalBody();
 }
 
 async function rejoinAsGM() {
-  if (!firebaseReady) {
+  if (!firebaseReady && !localDemoMode) {
     const ok = await initFirebaseSync();
     if (!ok) return;
   }
   const codeInput = (document.getElementById("sync-join-code")?.value || "").trim().toUpperCase();
-  const roomRef = doc(db, "sessions", codeInput);
-  const snap = await getDoc(roomRef);
-  if (!snap.exists()) {
-    alertModalInfo(`Sala "${codeInput}" não encontrada.`);
+  if (!codeInput) {
+    alertModalInfo("Digite o código da sala para entrar como Mestre.");
     return;
   }
 
-  sessionState = {
-    roomCode: codeInput,
-    role: "gm",
-    gmSecret: snap.data().gmSecret || "",
-    playerAlias: "Mestre"
-  };
+  if (localDemoMode) {
+    const metaRaw = localStorage.getItem(`op_demo_room_${codeInput}_meta`);
+    if (!metaRaw) {
+      alertModalInfo(`Sala "${codeInput}" não encontrada.`);
+      return;
+    }
+    sessionState = { roomCode: codeInput, role: "gm", gmSecret: JSON.parse(metaRaw).gmSecret || "", playerAlias: "Mestre" };
+  } else {
+    const roomRef = doc(db, "sessions", codeInput);
+    const snap = await getDoc(roomRef);
+    if (!snap.exists()) {
+      alertModalInfo(`Sala "${codeInput}" não encontrada.`);
+      return;
+    }
+    sessionState = {
+      roomCode: codeInput,
+      role: "gm",
+      gmSecret: snap.data().gmSecret || "",
+      playerAlias: "Mestre"
+    };
+  }
+
   saveSessionMeta();
   updateConnectionBadge();
   connectToRoomListeners(codeInput);
@@ -311,6 +380,14 @@ function leaveSession() {
 }
 
 async function removeAgentFromSession(agentId) {
+  if (localDemoMode && sessionState.roomCode) {
+    const key = `op_demo_room_${sessionState.roomCode}_agents`;
+    const list = JSON.parse(localStorage.getItem(key) || "[]").filter(a => a.id !== agentId);
+    originalSetItem(key, JSON.stringify(list));
+    loadLocalDemoRoomData(sessionState.roomCode);
+    renderSessionModalBody();
+    return;
+  }
   if (!firebaseReady || !sessionState.roomCode) return;
   await deleteDoc(doc(db, "sessions", sessionState.roomCode, "agents", agentId));
   if (inspectedAgentId === agentId) inspectedAgentId = null;
@@ -322,6 +399,11 @@ async function removeAgentFromSession(agentId) {
 function connectToRoomListeners(roomCode) {
   if (unsubscribeRoomAgents) unsubscribeRoomAgents();
   if (unsubscribeRoomRolls) unsubscribeRoomRolls();
+
+  if (localDemoMode) {
+    loadLocalDemoRoomData(roomCode);
+    return;
+  }
 
   const agentsCol = collection(db, "sessions", roomCode, "agents");
   unsubscribeRoomAgents = onSnapshot(
@@ -825,8 +907,33 @@ function renderInspectedAgentFullSheet(ag) {
 // ============================================================================
 // 8. BOOTSTRAP AUTOMÁTICO AO CARREGAR A PÁGINA
 // ============================================================================
-window.addEventListener("DOMContentLoaded", () => {
+// 8. BOOTSTRAP AUTOMÁTICO E DELEGAÇÃO DE EVENTOS (FUNCIONA SEMPRE)
+// ============================================================================
+function bootMultiplayerModule() {
   injectMultiplayerUI();
   setupRollObserver();
   initFirebaseSync();
+}
+
+// Delegação global de cliques para garantir que botões dinâmicos nunca falhem
+document.addEventListener("click", (e) => {
+  const target = e.target.closest("button");
+  if (!target) return;
+
+  if (target.id === "btn-create-gm-room") {
+    e.preventDefault();
+    createSessionAsGM();
+  } else if (target.id === "btn-join-player-room") {
+    e.preventDefault();
+    joinSessionAsPlayer();
+  } else if (target.id === "btn-rejoin-gm-room") {
+    e.preventDefault();
+    rejoinAsGM();
+  }
 });
+
+if (document.readyState === "loading") {
+  window.addEventListener("DOMContentLoaded", bootMultiplayerModule);
+} else {
+  bootMultiplayerModule();
+}
