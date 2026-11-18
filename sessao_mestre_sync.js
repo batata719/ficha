@@ -421,63 +421,6 @@ async function joinSessionAsPlayer() {
   }
 }
 
-async function joinSessionAsPlayer() {
-  const btn = document.getElementById("btn-join-player-room");
-  if (btn) {
-    btn.disabled = true;
-    btn.textContent = "⏳ Conectando...";
-  }
-
-  try {
-    if (!firebaseReady && !localDemoMode) {
-      const ok = await initFirebaseSync();
-      if (!ok) return;
-    }
-
-    const codeInput = (document.getElementById("sync-join-code")?.value || "").trim().toUpperCase();
-    const aliasInput = (document.getElementById("sync-player-alias")?.value || "").trim();
-
-    if (codeInput.length < 4) {
-      alertModalInfo("Digite um código de sala válido (ex: A7K9P2).");
-      return;
-    }
-
-    if (localDemoMode) {
-      const meta = localStorage.getItem(`op_demo_room_${codeInput}_meta`);
-      if (!meta) {
-        alertModalInfo(`Sala local "${codeInput}" não encontrada neste navegador.`);
-        return;
-      }
-    } else {
-      const roomRef = doc(db, "sessions", codeInput);
-      const snap = await getDoc(roomRef);
-      if (!snap.exists()) {
-        alertModalInfo(`Sala "${codeInput}" não encontrada. Verifique o código com o Mestre.`);
-        return;
-      }
-    }
-
-    sessionState = {
-      roomCode: codeInput,
-      role: "player",
-      gmSecret: null,
-      playerAlias: aliasInput || "Agente"
-    };
-    saveSessionMeta();
-    updateConnectionBadge();
-    connectToRoomListeners(codeInput);
-    await pushActiveAgentToRoom();
-    renderSessionModalBody();
-  } catch (err) {
-    alertModalInfo(`Erro ao entrar na sala: ${err.message || err}`);
-  } finally {
-    if (btn) {
-      btn.disabled = false;
-      btn.textContent = "Conectar Ficha Ativa →";
-    }
-  }
-}
-
 async function rejoinAsGM() {
   if (!firebaseReady && !localDemoMode) {
     const logged = await loginWithGoogle();
@@ -639,12 +582,12 @@ function computeGMAgentSummary(ag) {
 // 7. INJEÇÃO DA INTERFACE VISUAL (BOTÃO NA BARRA + MODAL DO ESCUDO DO MESTRE)
 // ============================================================================
 function injectMultiplayerUI() {
-  // 1. Injeta botão na barra superior existente sem alterar o HTML original
+  // 1. Injeta botão na barra superior existente (ou botão flutuante de fallback)
   const topBarRight = document.querySelector("body > div:first-child .max-w-7xl > div:last-child");
-  if (topBarRight && !document.getElementById("btn-open-session-hub")) {
+  if (!document.getElementById("btn-open-session-hub")) {
     const btn = document.createElement("button");
     btn.id = "btn-open-session-hub";
-    btn.className = "px-2.5 py-1 rounded-md bg-purple-600/20 hover:bg-purple-600/35 border border-purple-500/40 text-purple-200 font-semibold transition flex items-center gap-1.5";
+    btn.type = "button";
     btn.innerHTML = `<span>🌐</span> <span id="session-btn-label">Mesa / Sessão</span>`;
     btn.onclick = () => {
       const modal = document.getElementById("modal-multiplayer-session");
@@ -652,7 +595,14 @@ function injectMultiplayerUI() {
       modal.classList.add("flex");
       renderSessionModalBody();
     };
-    topBarRight.prepend(btn);
+
+    if (topBarRight) {
+      btn.className = "px-2.5 py-1 rounded-md bg-purple-600/20 hover:bg-purple-600/35 border border-purple-500/40 text-purple-200 font-semibold transition flex items-center gap-1.5";
+      topBarRight.prepend(btn);
+    } else {
+      btn.className = "fixed bottom-5 left-5 z-40 px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold shadow-xl flex items-center gap-1.5";
+      document.body.appendChild(btn);
+    }
   }
 
   // 2. Injeta o Modal do Escudo do Mestre / Conexão de Sessão
