@@ -120,19 +120,14 @@ async function initFirebaseSync() {
       } else {
         currentUser = null;
         firebaseReady = false;
-        firebaseStatusText = "Aguardando Login (Google ou Visitante)";
+        firebaseStatusText = "Aguardando Login com Google";
         renderSessionModalBody();
       }
     });
 
-    // Se ainda não estiver logado, tenta visitante anônimo como padrão (se ativado no Firebase)
     if (!auth.currentUser) {
-      try {
-        await withTimeout(signInAnonymously(auth), 5000, "");
-      } catch (e) {
-        firebaseStatusText = "Clique em 'Entrar com Google' para conectar";
-        renderSessionModalBody();
-      }
+      firebaseStatusText = "Desconectado — Entre com Google";
+      renderSessionModalBody();
     }
     return true;
   } catch (err) {
@@ -148,14 +143,17 @@ async function loginWithGoogle() {
   try {
     if (!auth) await initFirebaseSync();
     const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: "select_account" });
     const result = await signInWithPopup(auth, provider);
     currentUser = result.user;
     firebaseReady = true;
     localDemoMode = false;
     firebaseStatusText = `Conectado: ${currentUser.displayName || currentUser.email}`;
     renderSessionModalBody();
+    return true;
   } catch (err) {
     alertModalInfo(`Erro no Login Google (${err.code}): ${err.message}`);
+    return false;
   }
 }
 
@@ -313,8 +311,8 @@ async function createSessionAsGM() {
 
   try {
     if (!firebaseReady && !localDemoMode) {
-      const ok = await initFirebaseSync();
-      if (!ok) return;
+      const logged = await loginWithGoogle();
+      if (!logged) return;
     }
 
     const campaignName = document.getElementById("sync-campaign-name")?.value.trim() || "Missão Ordo Realitas";
@@ -370,8 +368,8 @@ async function joinSessionAsPlayer() {
 
   try {
     if (!firebaseReady && !localDemoMode) {
-      const ok = await initFirebaseSync();
-      if (!ok) return;
+      const logged = await loginWithGoogle();
+      if (!logged) return;
     }
 
     const codeInput = (document.getElementById("sync-join-code")?.value || "").trim().toUpperCase();
@@ -482,8 +480,8 @@ async function joinSessionAsPlayer() {
 
 async function rejoinAsGM() {
   if (!firebaseReady && !localDemoMode) {
-    const ok = await initFirebaseSync();
-    if (!ok) return;
+    const logged = await loginWithGoogle();
+    if (!logged) return;
   }
   const codeInput = (document.getElementById("sync-join-code")?.value || "").trim().toUpperCase();
   if (!codeInput) {
