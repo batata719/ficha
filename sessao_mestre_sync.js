@@ -1034,6 +1034,13 @@ function bootMultiplayerModule() {
   injectMultiplayerUI();
   setupRollObserver();
   initFirebaseSync();
+
+  // Garante que o botão nunca desapareça caso o DOM seja atualizado
+  setInterval(() => {
+    if (!document.getElementById("btn-open-session-hub")) {
+      injectMultiplayerUI();
+    }
+  }, 1500);
 }
 
 // Delegação global de cliques para garantir que botões dinâmicos nunca falhem
@@ -1041,22 +1048,15 @@ document.addEventListener("click", (e) => {
   const target = e.target.closest("button");
   if (!target) return;
 
-  if (target.id === "btn-create-gm-room") {
+  if (target.id === "btn-open-session-hub") {
     e.preventDefault();
-    createSessionAsGM();
-  } else if (target.id === "btn-join-player-room") {
-    e.preventDefault();
-    joinSessionAsPlayer();
-  } else if (target.id === "btn-rejoin-gm-room") {
-    e.preventDefault();
-    rejoinAsGM();
-  } else if (target.id === "btn-google-login") {
-    e.preventDefault();
-    loginWithGoogle();
-  } else if (target.id === "btn-google-logout") {
-    e.preventDefault();
-    logoutFirebaseUser();
-  }
+    const modal = document.getElementById("modal-multiplayer-session");
+    if (modal) {
+      modal.classList.remove("hidden");
+      modal.classList.add("flex");
+      renderSessionModalBody();
+    }
+  } else if (target.id === "btn-create-gm-room") {
 });
 
 if (document.readyState === "loading") {
