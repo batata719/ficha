@@ -45,6 +45,7 @@ let auth = null;
 let currentUser = null;
 let firebaseReady = false;
 let localDemoMode = false;
+let firebaseStatusText = "Conectando ao servidor...";
 
 const SESSION_META_KEY = "op_multiplayer_session_v1";
 let sessionState = loadSessionMeta();
@@ -71,21 +72,38 @@ function saveSessionMeta() {
   localStorage.setItem(SESSION_META_KEY, JSON.stringify(sessionState));
 }
 
+function withTimeout(promise, ms, timeoutMsg) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error(timeoutMsg)), ms))
+  ]);
+}
+
 async function initFirebaseSync() {
   if (!FIREBASE_CONFIG.apiKey || FIREBASE_CONFIG.apiKey === "SUA_API_KEY_AQUI") {
     localDemoMode = true;
-    console.warn("[Ordo Sync] FIREBASE_CONFIG não configurado — ativando Modo Local de Demonstração (funciona entre abas do mesmo navegador).");
+    firebaseStatusText = "Modo Local (Sem Firebase)";
+    renderSessionModalBody();
     return true;
   }
   try {
+    firebaseStatusText = "Autenticando no Firebase...";
+    renderSessionModalBody();
+
     const app = initializeApp(FIREBASE_CONFIG);
     auth = getAuth(app);
     db = getFirestore(app);
-    const cred = await signInAnonymously(auth);
+    const cred = await withTimeout(
+      signInAnonymously(auth),
+      7000,
+      "Tempo esgotado ao autenticar. Verifique se 'Login Anônimo' está ativado no Firebase Authentication e se o domínio do site está autorizado."
+    );
     currentUser = cred.user;
     firebaseReady = true;
     localDemoMode = false;
+    firebaseStatusText = `Conectado (${FIREBASE_CONFIG.projectId})`;
     updateConnectionBadge();
+    renderSessionModalBody();
 
     // Reconecta automaticamente se já estava em uma sala antes de recarregar
     if (sessionState.roomCode && sessionState.role) {
@@ -97,7 +115,9 @@ async function initFirebaseSync() {
     return true;
   } catch (err) {
     console.error("[Ordo Sync] Falha ao conectar no Firebase:", err);
-    alertModalInfo(`Erro no Firebase: ${err.message || "Verifique se a Autenticação Anônima e o Firestore estão ativados."}`);
+    firebaseStatusText = `Erro Firebase: ${err.code || err.message}`;
+    alertModalInfo(`Erro no Firebase (${err.code || "Conexão"}): ${err.message}`);
+    renderSessionModalBody();
     return false;
   }
 }
@@ -238,6 +258,7 @@ function loadLocalDemoRoomData(roomCode) {
 
 async function createSessionAsGM() {
   const btn = document.getElementById("btn-create-gm-room");
+  if (btn && btn.disabled) return;
   if (btn) {
     btn.disabled = true;
     btn.textContent = "⏳ Criando sala...";
@@ -255,16 +276,19 @@ async function createSessionAsGM() {
 
     if (localDemoMode) {
       originalSetItem(`op_demo_room_${roomCode}_meta`, JSON.stringify({ roomCode, campaignName, gmSecret }));
-      alertModalInfo("Modo Teste Local ativo (chaves do Firebase ainda não configuradas). Abra outra aba deste site e entre com o código gerado para testar!");
     } else {
       const roomRef = doc(db, "sessions", roomCode);
-      await setDoc(roomRef, {
-        roomCode,
-        campaignName,
-        gmUid: currentUser.uid,
-        gmSecret,
-        createdAt: serverTimestamp()
-      });
+      await withTimeout(
+        setDoc(roomRef, {
+          roomCode,
+          campaignName,
+          gmUid: currentUser.uid,
+          gmSecret,
+          createdAt: serverTimestamp()
+        }),
+        7000,
+        "Tempo esgotado ao gravar no Firestore. Verifique se o banco Firestore foi criado e se as Regras foram publicadas."
+      );
     }
 
     sessionState = {
@@ -281,9 +305,73 @@ async function createSessionAsGM() {
     console.error("[Ordo Sync] Erro ao criar sala:", err);
     alertModalInfo(`Não foi possível criar a sala: ${err.message || "Verifique as regras do Firestore."}`);
   } finally {
-    if (btn) {
-      btn.disabled = false;
-      btn.textContent = "Criar Sala como Mestre →";
+    const freshBtn = document.getElementById("btn-create-gm-room");
+    if (freshBtn) {
+      freshBtn.disabled = false;
+      freshBtn.textContent = "Criar Sala como Mestre →";
+    }
+  }
+}
+
+async function joinSessionAsPlayer() {
+  const btn = document.getElementById("btn-join-player-room");
+  if (btn && btn.disabled) return;
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "⏳ Conectando...";
+  }
+
+  try {
+    if (!firebaseReady && !localDemoMode) {
+      const ok = await initFirebaseSync();
+      if (!ok) return;
+    }
+
+    const codeInput = (document.getElementById("sync-join-code")?.value || "").trim().toUpperCase();
+    const aliasInput = (document.getElementById("sync-player-alias")?.value || "").trim();
+
+    if (codeInput.length < 4) {
+      alertModalInfo("Digite um código de sala válido (ex: A7K9P2).");
+      return;
+    }
+
+    if (localDemoMode) {
+      const meta = localStorage.getItem(`op_demo_room_${codeInput}_meta`);
+      if (!meta) {
+        alertModalInfo(`Sala local "${codeInput}" não encontrada neste navegador.`);
+        return;
+      }
+    } else {
+      const roomRef = doc(db, "sessions", codeInput);
+      const snap = await withTimeout(
+        getDoc(roomRef),
+        7000,
+        "Tempo esgotado ao buscar a sala no Firestore."
+      );
+      if (!snap.exists()) {
+        alertModalInfo(`Sala "${codeInput}" não encontrada. Verifique o código com o Mestre.`);
+        return;
+      }
+    }
+
+    sessionState = {
+      roomCode: codeInput,
+      role: "player",
+      gmSecret: null,
+      playerAlias: aliasInput || "Agente"
+    };
+    saveSessionMeta();
+    updateConnectionBadge();
+    connectToRoomListeners(codeInput);
+    await pushActiveAgentToRoom();
+    renderSessionModalBody();
+  } catch (err) {
+    alertModalInfo(`Erro ao entrar na sala: ${err.message || err}`);
+  } finally {
+    const freshBtn = document.getElementById("btn-join-player-room");
+    if (freshBtn) {
+      freshBtn.disabled = false;
+      freshBtn.textContent = "Conectar Ficha Ativa →";
     }
   }
 }
@@ -578,8 +666,18 @@ function renderSessionModalBody() {
 
   // CASO A: Não conectado a nenhuma sala -> Tela de Criar Sala (Mestre) ou Entrar (Jogador)
   if (!sessionState.roomCode) {
+    const statusBadgeClass = firebaseReady
+      ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
+      : localDemoMode
+        ? "bg-amber-500/15 text-amber-300 border-amber-500/30"
+        : "bg-zinc-800 text-zinc-300 border-zinc-700";
+
     body.innerHTML = `
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-5 py-2">
+      <div class="flex flex-wrap items-center justify-between gap-2 bg-[#09090b] border border-[#26262e] rounded-xl px-3.5 py-2 text-xs">
+        <span class="text-zinc-400">Status do Servidor:</span>
+        <span class="font-mono px-2.5 py-0.5 rounded border ${statusBadgeClass}">${firebaseStatusText}</span>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5 py-1">
         <!-- Lado do Mestre -->
         <div class="bg-[#09090b] border border-purple-500/30 rounded-2xl p-5 flex flex-col justify-between gap-4">
           <div class="space-y-2">
@@ -596,7 +694,7 @@ function renderSessionModalBody() {
                 class="w-full bg-[#111114] border border-[#26262e] rounded-xl px-3 py-2 text-xs text-white outline-none" />
             </div>
           </div>
-          <button id="btn-create-gm-room" class="w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold transition">
+          <button type="button" id="btn-create-gm-room" class="w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold transition">
             Criar Sala como Mestre →
           </button>
         </div>
@@ -625,20 +723,16 @@ function renderSessionModalBody() {
             </div>
           </div>
           <div class="flex gap-2">
-            <button id="btn-join-player-room" class="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition">
+            <button type="button" id="btn-join-player-room" class="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition">
               Conectar Ficha Ativa →
             </button>
-            <button id="btn-rejoin-gm-room" title="Reabrir uma sala existente como Mestre" class="px-3 py-2.5 rounded-xl bg-[#18181d] hover:bg-zinc-800 border border-[#26262e] text-zinc-300 text-xs transition">
+            <button type="button" id="btn-rejoin-gm-room" title="Reabrir uma sala existente como Mestre" class="px-3 py-2.5 rounded-xl bg-[#18181d] hover:bg-zinc-800 border border-[#26262e] text-zinc-300 text-xs transition">
               Entrar como Mestre
             </button>
           </div>
         </div>
       </div>
     `;
-
-    document.getElementById("btn-create-gm-room").onclick = createSessionAsGM;
-    document.getElementById("btn-join-player-room").onclick = joinSessionAsPlayer;
-    document.getElementById("btn-rejoin-gm-room").onclick = rejoinAsGM;
     return;
   }
 
