@@ -13,7 +13,14 @@
  */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import {
+  getAuth,
+  signInAnonymously,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signOut,
+  onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import {
   getFirestore,
   doc,
@@ -93,23 +100,38 @@ async function initFirebaseSync() {
     const app = initializeApp(FIREBASE_CONFIG);
     auth = getAuth(app);
     db = getFirestore(app);
-    const cred = await withTimeout(
-      signInAnonymously(auth),
-      7000,
-      "Tempo esgotado ao autenticar. Verifique se 'Login Anônimo' está ativado no Firebase Authentication e se o domínio do site está autorizado."
-    );
-    currentUser = cred.user;
-    firebaseReady = true;
-    localDemoMode = false;
-    firebaseStatusText = `Conectado (${FIREBASE_CONFIG.projectId})`;
-    updateConnectionBadge();
-    renderSessionModalBody();
 
-    // Reconecta automaticamente se já estava em uma sala antes de recarregar
-    if (sessionState.roomCode && sessionState.role) {
-      connectToRoomListeners(sessionState.roomCode);
-      if (sessionState.role === "player") {
-        pushActiveAgentToRoom();
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        currentUser = user;
+        firebaseReady = true;
+        localDemoMode = false;
+        const label = user.isAnonymous ? "Visitante" : (user.displayName || user.email);
+        firebaseStatusText = `Conectado: ${label}`;
+        updateConnectionBadge();
+        renderSessionModalBody();
+
+        if (sessionState.roomCode && sessionState.role) {
+          connectToRoomListeners(sessionState.roomCode);
+          if (sessionState.role === "player") {
+            pushActiveAgentToRoom();
+          }
+        }
+      } else {
+        currentUser = null;
+        firebaseReady = false;
+        firebaseStatusText = "Aguardando Login (Google ou Visitante)";
+        renderSessionModalBody();
+      }
+    });
+
+    // Se ainda não estiver logado, tenta visitante anônimo como padrão (se ativado no Firebase)
+    if (!auth.currentUser) {
+      try {
+        await withTimeout(signInAnonymously(auth), 5000, "");
+      } catch (e) {
+        firebaseStatusText = "Clique em 'Entrar com Google' para conectar";
+        renderSessionModalBody();
       }
     }
     return true;
@@ -120,6 +142,31 @@ async function initFirebaseSync() {
     renderSessionModalBody();
     return false;
   }
+}
+
+async function loginWithGoogle() {
+  try {
+    if (!auth) await initFirebaseSync();
+    const provider = new GoogleAuthProvider();
+    const result = await signInWithPopup(auth, provider);
+    currentUser = result.user;
+    firebaseReady = true;
+    localDemoMode = false;
+    firebaseStatusText = `Conectado: ${currentUser.displayName || currentUser.email}`;
+    renderSessionModalBody();
+  } catch (err) {
+    alertModalInfo(`Erro no Login Google (${err.code}): ${err.message}`);
+  }
+}
+
+async function logoutFirebaseUser() {
+  if (!auth) return;
+  leaveSession();
+  await signOut(auth);
+  currentUser = null;
+  firebaseReady = false;
+  firebaseStatusText = "Desconectado — Entre com Google";
+  renderSessionModalBody();
 }
 
 // ============================================================================
@@ -672,10 +719,22 @@ function renderSessionModalBody() {
         ? "bg-amber-500/15 text-amber-300 border-amber-500/30"
         : "bg-zinc-800 text-zinc-300 border-zinc-700";
 
+    const isGoogleLogged = currentUser && !currentUser.isAnonymous;
+
     body.innerHTML = `
-      <div class="flex flex-wrap items-center justify-between gap-2 bg-[#09090b] border border-[#26262e] rounded-xl px-3.5 py-2 text-xs">
-        <span class="text-zinc-400">Status do Servidor:</span>
-        <span class="font-mono px-2.5 py-0.5 rounded border ${statusBadgeClass}">${firebaseStatusText}</span>
+      <div class="flex flex-wrap items-center justify-between gap-2 bg-[#09090b] border border-[#26262e] rounded-xl px-3.5 py-2.5 text-xs">
+        <div class="flex items-center gap-2">
+          <span class="text-zinc-400">Conta:</span>
+          <span class="font-mono px-2.5 py-0.5 rounded border ${statusBadgeClass}">${firebaseStatusText}</span>
+        </div>
+        <div class="flex items-center gap-2">
+          ${isGoogleLogged
+            ? `<button type="button" id="btn-google-logout" class="px-3 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs transition">Sair da Conta Google</button>`
+            : `<button type="button" id="btn-google-login" class="px-3 py-1.5 rounded-lg bg-white hover:bg-zinc-200 text-zinc-900 font-semibold text-xs transition flex items-center gap-1.5">
+                <span>🔵</span> <span>Entrar com Google</span>
+              </button>`
+          }
+        </div>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-5 py-1">
         <!-- Lado do Mestre -->
@@ -1043,6 +1102,12 @@ document.addEventListener("click", (e) => {
   } else if (target.id === "btn-rejoin-gm-room") {
     e.preventDefault();
     rejoinAsGM();
+  } else if (target.id === "btn-google-login") {
+    e.preventDefault();
+    loginWithGoogle();
+  } else if (target.id === "btn-google-logout") {
+    e.preventDefault();
+    logoutFirebaseUser();
   }
 });
 
