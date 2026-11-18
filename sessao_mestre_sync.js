@@ -28,13 +28,13 @@ import {
 // ============================================================================
 // 1. COLE AQUI AS CREDENCIAIS DO SEU PROJETO FIREBASE (Veja o Tutorial!)
 // ============================================================================
-const FIREBASE_CONFIG = {
-  apiKey: "SUA_API_KEY_AQUI",
-  authDomain: "SEU_PROJETO.firebaseapp.com",
-  projectId: "SEU_PROJETO_ID",
-  storageBucket: "SEU_PROJETO.appspot.com",
-  messagingSenderId: "SEU_SENDER_ID",
-  appId: "SEU_APP_ID"
+const firebaseConfig = {
+  apiKey: "AIzaSyDKc688y119WyFzE5yGmxkaeYQBtLlI3FM",
+  authDomain: "ordo-realitas-mesa.firebaseapp.com",
+  projectId: "ordo-realitas-mesa",
+  storageBucket: "ordo-realitas-mesa.firebasestorage.app",
+  messagingSenderId: "1049343664232",
+  appId: "1:1049343664232:web:00818b1ce7f88101931bdd"
 };
 
 // ============================================================================
