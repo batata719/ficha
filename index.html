@@ -5048,12 +5048,13 @@
     }
   </style>
 
-  <script type="module">
+ <script type="module">
     import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import {
       getFirestore,
       doc,
+      getDocFromServer,
       getDoc,
       setDoc,
       onSnapshot
@@ -5084,7 +5085,8 @@
     const obsAuth = getAuth(obsApp);
     const obsDb = getFirestore(obsApp);
 
-    // Garante autenticação anônima ativa antes de ler/gravar no Firestore (corrige bloqueio de permissão no OBS)
+    let obsSyncStatusText = "Conectando ao servidor...";
+
     let authReadyPromise = new Promise((resolve) => {
       onAuthStateChanged(obsAuth, (user) => {
         if (user) {
@@ -5092,7 +5094,10 @@
         } else {
           signInAnonymously(obsAuth)
             .then((cred) => resolve(cred.user))
-            .catch(() => resolve(null));
+            .catch((err) => {
+              obsSyncStatusText = "Erro Auth: " + (err?.code || "falha");
+              resolve(null);
+            });
         }
       });
     });
@@ -5157,7 +5162,7 @@
       return { maxPv, maxPe, maxSan };
     }
 
-    function compressImageDataUrl(dataUrl, maxSide = 340, quality = 0.8) {
+    function compressImageDataUrl(dataUrl, maxSide = 320, quality = 0.78) {
       return new Promise((resolve) => {
         if (!dataUrl || !dataUrl.startsWith("data:image")) return resolve(dataUrl);
         const img = new Image();
@@ -5252,10 +5257,11 @@
         const cleanCfg = { ...cfg };
         for (const k of ["avatarNormal", "avatarHurt", "avatarInsane", "avatarDying"]) {
           if (cleanCfg[k] && cleanCfg[k].startsWith("data:")) {
-            cleanCfg[k] = await compressImageDataUrl(cleanCfg[k], 340, 0.8);
+            cleanCfg[k] = await compressImageDataUrl(cleanCfg[k], 320, 0.78);
           }
         }
 
+        const nowTs = Date.now();
         const payload = {
           agent: {
             id: ag.id,
@@ -5275,14 +5281,27 @@
             bonusSan: ag.bonusSan || 0
           },
           obsCfg: cleanCfg,
-          rollEvent: rollEvent ? { ...rollEvent, rollId: Date.now() } : null,
-          updatedAt: Date.now()
+          rollEvent: rollEvent ? { ...rollEvent, rollId: nowTs } : null,
+          updatedAt: nowTs
         };
 
-        await setDoc(doc(obsDb, "obs_overlays", ag.id), payload, { merge: true });
-        await setDoc(doc(obsDb, "obs_overlays", "latest_active_agent"), payload, { merge: true });
+        await setDoc(doc(obsDb, "obs_overlays", ag.id), payload);
+        await setDoc(doc(obsDb, "obs_overlays", "latest_active_agent"), payload);
+
+        const hora = new Date(nowTs).toLocaleTimeString("pt-BR");
+        obsSyncStatusText = `✓ Sincronizado com o OBS (${hora})`;
+        const statusEl = document.getElementById("obs-cloud-status-badge");
+        if (statusEl) {
+          statusEl.textContent = obsSyncStatusText;
+          statusEl.className = "text-[11px] font-mono text-emerald-400";
+        }
       } catch (err) {
-        console.warn("OBS Cloud sync error:", err);
+        obsSyncStatusText = `⚠ Falha no envio: ${err?.code || err?.message || "erro"}`;
+        const statusEl = document.getElementById("obs-cloud-status-badge");
+        if (statusEl) {
+          statusEl.textContent = obsSyncStatusText;
+          statusEl.className = "text-[11px] font-mono text-rose-400";
+        }
       }
     }
 
@@ -5305,7 +5324,7 @@
       } else {
         obsCloudSyncTimer = setTimeout(() => {
           pushObsCloudStream(ag, cfg, rollEvent);
-        }, rollEvent ? 30 : 120);
+        }, rollEvent ? 20 : 100);
       }
     }
 
@@ -5334,8 +5353,9 @@
       let currentObsCfg = embeddedData?.obsCfg || {};
       let lastRollTimeout = null;
       let lastSeenRollId = null;
+      let lastRenderedHash = "";
 
-      function renderObsOverlay(rollEvent = null) {
+      function renderObsOverlay(rollEvent = null, force = false) {
         if (!currentObsAgent) return;
         const ag = currentObsAgent;
         const cfg = currentObsCfg || {};
@@ -5345,6 +5365,20 @@
         const curPv = ag.currentPv ?? vitals.maxPv;
         const curPe = ag.currentPe ?? vitals.maxPe;
         const curSan = ag.currentSan ?? vitals.maxSan;
+
+        const stateHash = JSON.stringify({
+          n: ag.name, x: ag.nex, a: ag.affinity,
+          pv: curPv, mpv: vitals.maxPv,
+          pe: curPe, mpe: vitals.maxPe,
+          san: curSan, msan: vitals.maxSan,
+          img: cfg.avatarNormal, imgh: cfg.avatarHurt,
+          imgi: cfg.avatarInsane, imgd: cfg.avatarDying,
+          sb: cfg.showBars, sn: cfg.showName, sx: cfg.showNex,
+          roll: rollEvent ? rollEvent.rollId || rollEvent.result : null
+        });
+
+        if (!force && !rollEvent && stateHash === lastRenderedHash) return;
+        lastRenderedHash = stateHash;
 
         const pvPct = Math.min(100, Math.max(0, Math.round((curPv / vitals.maxPv) * 100)));
         const pePct = Math.min(100, Math.max(0, Math.round((curPe / vitals.maxPe) * 100)));
@@ -5578,6 +5612,20 @@
         }
       }
 
+      function applyCloudPayload(data) {
+        if (!data || !data.agent) return;
+        currentObsAgent = data.agent;
+        if (data.obsCfg) {
+          currentObsCfg = { ...currentObsCfg, ...data.obsCfg };
+        }
+        let newRoll = null;
+        if (data.rollEvent && data.rollEvent.rollId && data.rollEvent.rollId !== lastSeenRollId) {
+          lastSeenRollId = data.rollEvent.rollId;
+          newRoll = data.rollEvent;
+        }
+        renderObsOverlay(newRoll);
+      }
+
       function syncFromLocalStorage() {
         try {
           const raw = localStorage.getItem("op_agents_roster_v1");
@@ -5603,58 +5651,53 @@
           if (targetAgentId && data.agent?.id !== targetAgentId) return;
           currentObsAgent = data.agent;
           currentObsCfg = { ...currentObsCfg, ...(data.obsCfg || {}) };
-          renderObsOverlay(data.rollEvent || null);
+          renderObsOverlay(data.rollEvent || null, true);
         };
       }
 
-      window.addEventListener("storage", (e) => {
-        if (e.key === "op_agents_roster_v1" || e.key === OBS_CFG_KEY) {
-          syncFromLocalStorage();
-        }
-      });
-
-      // Conecta ao Firestore APÓS signInAnonymously concluir para garantir leitura em tempo real sem bloqueio
       async function bootstrapObsRealtime() {
         syncFromLocalStorage();
-        if (currentObsAgent) renderObsOverlay();
+        if (currentObsAgent) renderObsOverlay(null, true);
 
         await authReadyPromise;
-
         const docIdToWatch = targetAgentId || "latest_active_agent";
-        try {
-          const snap = await getDoc(doc(obsDb, "obs_overlays", docIdToWatch));
-          if (snap.exists()) {
-            const data = snap.data();
-            currentObsAgent = data.agent;
-            currentObsCfg = { ...currentObsCfg, ...(data.obsCfg || {}) };
-            renderObsOverlay();
-          }
+        const overlayDocRef = doc(obsDb, "obs_overlays", docIdToWatch);
 
-          onSnapshot(doc(obsDb, "obs_overlays", docIdToWatch), (liveSnap) => {
-            if (liveSnap.exists()) {
-              const data = liveSnap.data();
-              currentObsAgent = data.agent;
-              currentObsCfg = { ...currentObsCfg, ...(data.obsCfg || {}) };
-              let newRoll = null;
-              if (data.rollEvent && data.rollEvent.rollId !== lastSeenRollId) {
-                lastSeenRollId = data.rollEvent.rollId;
-                newRoll = data.rollEvent;
-              }
-              renderObsOverlay(newRoll);
+        // 1) Listener em tempo real padrão
+        onSnapshot(overlayDocRef, (liveSnap) => {
+          if (liveSnap.exists()) applyCloudPayload(liveSnap.data());
+        });
+
+        if (targetRoomCode && targetAgentId) {
+          onSnapshot(doc(obsDb, "sessions", targetRoomCode, "agents", targetAgentId), (roomSnap) => {
+            if (roomSnap.exists()) {
+              currentObsAgent = roomSnap.data();
+              renderObsOverlay();
             }
           });
+        }
 
-          if (targetRoomCode && targetAgentId) {
-            onSnapshot(doc(obsDb, "sessions", targetRoomCode, "agents", targetAgentId), (roomSnap) => {
-              if (roomSnap.exists()) {
-                currentObsAgent = roomSnap.data();
+        // 2) Polling direto do servidor a cada 1.2s (garante atualização mesmo quando o OBS suspende WebSockets)
+        setInterval(async () => {
+          try {
+            const snap = await getDocFromServer(overlayDocRef);
+            if (snap.exists()) {
+              applyCloudPayload(snap.data());
+            }
+            if (targetRoomCode && targetAgentId) {
+              const rSnap = await getDocFromServer(doc(obsDb, "sessions", targetRoomCode, "agents", targetAgentId));
+              if (rSnap.exists()) {
+                currentObsAgent = rSnap.data();
                 renderObsOverlay();
               }
-            });
+            }
+          } catch (e) {
+            try {
+              const fallbackSnap = await getDoc(overlayDocRef);
+              if (fallbackSnap.exists()) applyCloudPayload(fallbackSnap.data());
+            } catch (_) {}
           }
-        } catch (err) {
-          console.warn("OBS Realtime listener fallback:", err);
-        }
+        }, 1200);
       }
 
       bootstrapObsRealtime();
@@ -5665,7 +5708,6 @@
       let lastRosterJson = localStorage.getItem("op_agents_roster_v1") || "";
       let lastCfgJson = localStorage.getItem(OBS_CFG_KEY) || "";
 
-      // Detecta QUALQUER alteração feita na ficha (PV, PE, SAN, NEX, troca de agente, etc.)
       setInterval(() => {
         const curRoster = localStorage.getItem("op_agents_roster_v1") || "";
         const curCfg = localStorage.getItem(OBS_CFG_KEY) || "";
@@ -5674,7 +5716,7 @@
           lastCfgJson = curCfg;
           broadcastObsSnapshot(null, true);
         }
-      }, 450);
+      }, 400);
 
       function attachObsRollListener() {
         const toastBox = document.getElementById("toast-container");
@@ -5720,7 +5762,7 @@
                   <span class="text-xl">🎥</span>
                   <div>
                     <h3 class="text-base font-bold text-white">OBS Studio — Portrait Estilo Dossiê (Tempo Real)</h3>
-                    <p class="text-xs text-zinc-400">Atualiza PV, PE, SAN, status e rolagens ao vivo no OBS</p>
+                    <p id="obs-cloud-status-badge" class="text-[11px] font-mono text-zinc-400">${obsSyncStatusText}</p>
                   </div>
                 </div>
                 <button type="button" id="btn-close-obs-modal" class="text-zinc-400 hover:text-white text-lg px-2">✕</button>
@@ -5774,7 +5816,7 @@
           <div class="bg-[#09090b] border border-amber-500/35 rounded-2xl p-4 space-y-3">
             <div class="flex flex-wrap items-center justify-between gap-2">
               <span class="text-xs font-bold text-amber-300 uppercase tracking-wider">1. Formato & Link do OBS</span>
-              <span class="text-[11px] font-mono text-zinc-400">Agente: <strong class="text-emerald-400">${ag.name} (NEX ${ag.nex || 5}%)</strong></span>
+              <span class="text-[11px] font-mono text-zinc-400">Agente vinculado: <strong class="text-emerald-400">${ag.name} (NEX ${ag.nex || 5}%)</strong></span>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
@@ -5809,6 +5851,7 @@
             </div>
             <p class="text-[11px] text-zinc-400">
               No OBS Studio: <strong>Fontes (+) → Navegador</strong> → Cole o link acima → Dimensões: <code class="text-amber-300 font-mono">${recSize}</code>.
+              <br><span class="text-amber-300">Dica no OBS:</span> Desmarque <em>"Desativar fonte quando não visível"</em> nas propriedades da fonte Navegador para nunca pausar.
             </p>
           </div>
 
@@ -5944,7 +5987,7 @@
         const fieldKey = fileInput.getAttribute("data-obs-file");
         const reader = new FileReader();
         reader.onload = async (ev) => {
-          const compressed = await compressImageDataUrl(ev.target.result, 340, 0.8);
+          const compressed = await compressImageDataUrl(ev.target.result, 320, 0.78);
           const textInputId = {
             avatarNormal: "obs-input-normal",
             avatarHurt: "obs-input-hurt",
