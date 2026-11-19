@@ -4978,113 +4978,73 @@
   </script>
 
   <!-- ==================== OBS STUDIO STREAM PORTRAIT SYSTEM (STANDALONE & ANALOG DOSSIER) ==================== -->
- <style>
-    /* ==================== OBS PORTRAIT SKINS ==================== */
+  <style id="obs-portrait-styles">
+    @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Special+Elite&display=swap');
+
     html.obs-stream-mode,
     html.obs-stream-mode body {
       background: transparent !important;
       background-color: rgba(0, 0, 0, 0) !important;
       overflow: hidden !important;
+      margin: 0 !important;
+      padding: 0 !important;
     }
-
-    html.obs-stream-mode > body > *:not(#obs-stream-stage) {
+    html.obs-stream-mode body > *:not(#obs-stream-stage) {
       display: none !important;
     }
 
     .obs-font-stamp {
-      font-family: "Courier New", Courier, monospace;
-      letter-spacing: 0.04em;
+      font-family: 'Special Elite', 'Courier Prime', monospace;
     }
     .obs-font-typewriter {
-      font-family: "Courier New", Courier, monospace;
-    }
-    .obs-font-hud {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    }
-    .obs-font-clean {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: 'Courier Prime', monospace;
     }
 
-    /* Filtros automáticos de estado */
-    .obs-hurt-filter {
-      filter: sepia(0.35) contrast(1.18) brightness(0.92);
-    }
-    .obs-mad-filter {
-      filter: hue-rotate(245deg) saturate(1.45) contrast(1.2);
-    }
-    .obs-dying-filter {
-      filter: grayscale(1) contrast(1.35) brightness(0.68);
-    }
-
-    @keyframes obsRollPopIn {
-      0% { opacity: 0; transform: translateY(10px) scale(0.96); }
-      100% { opacity: 1; transform: translateY(0) scale(1); }
+    @keyframes obsNoteAppear {
+      0% { opacity: 0; transform: translateY(14px) rotate(-1.5deg); }
+      14% { opacity: 1; transform: translateY(0) rotate(-0.8deg); }
+      86% { opacity: 1; transform: translateY(0) rotate(-0.8deg); }
+      100% { opacity: 0; transform: translateY(-8px) rotate(-1.2deg); }
     }
     .obs-roll-note {
-      animation: obsRollPopIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      animation: obsNoteAppear 4.8s ease-out forwards;
     }
 
-    /* --- SKIN 1: DOSSIÊ (CLÁSSICO) --- */
+    /* Textura sutil de papel fotográfico e dossiê */
     .obs-paper-card {
-      background: linear-gradient(145deg, #f5efe4 0%, #e7decb 100%);
-      border: 1px solid #bfb29e;
-      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55), inset 0 0 24px rgba(139, 115, 85, 0.16);
-      color: #1c1815;
+      background-color: #f3ede2;
+      background-image:
+        radial-gradient(rgba(68, 56, 42, 0.06) 1px, transparent 0),
+        linear-gradient(180deg, rgba(255,255,255,0.45) 0%, rgba(214,202,184,0.35) 100%);
+      background-size: 14px 14px, 100% 100%;
+      color: #1f1b18;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.65), 0 2px 6px rgba(0, 0, 0, 0.45);
+      border: 1px solid #cfc3b0;
     }
+
     .obs-polaroid-frame {
       background: #faf7f2;
-      padding: 6px 6px 18px 6px;
+      padding: 7px 7px 22px 7px;
       border: 1px solid #d6cbb9;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.28);
-      transform: rotate(-1.5deg);
+      box-shadow: 0 6px 16px rgba(20, 15, 10, 0.35);
+      transform: rotate(-1.8deg);
     }
+
     .obs-tape-strip {
-      background: rgba(232, 220, 194, 0.78);
-      border-left: 1px dashed rgba(140, 125, 105, 0.45);
-      border-right: 1px dashed rgba(140, 125, 105, 0.45);
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+      background: rgba(235, 224, 198, 0.72);
+      border-left: 1px dashed rgba(140, 125, 100, 0.35);
+      border-right: 1px dashed rgba(140, 125, 100, 0.35);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.18);
     }
 
-    /* --- SKIN 2: TERMINAL C.R.I.S. (TÁTICO) --- */
-    .obs-cris-card {
-      background: linear-gradient(160deg, rgba(6, 12, 16, 0.94) 0%, rgba(10, 20, 26, 0.96) 100%);
-      border: 1px solid rgba(34, 211, 238, 0.45);
-      box-shadow: 0 0 24px rgba(6, 182, 212, 0.22), inset 0 0 18px rgba(6, 182, 212, 0.08);
-      position: relative;
-      overflow: hidden;
+    .obs-hurt-filter {
+      filter: sepia(0.28) contrast(1.14) saturate(1.25);
     }
-    .obs-cris-card::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: repeating-linear-gradient(
-        to bottom,
-        transparent 0px,
-        transparent 3px,
-        rgba(34, 211, 238, 0.04) 4px
-      );
-      pointer-events: none;
+    .obs-mad-filter {
+      filter: sepia(0.45) contrast(1.22) brightness(0.92);
     }
-    .obs-cris-corner {
-      position: absolute;
-      width: 10px;
-      height: 10px;
-      border-color: #22d3ee;
-      pointer-events: none;
-    }
-
-    /* --- SKIN 3: GRIMÓRIO PARANORMAL (OCULTISMO) --- */
-    .obs-occult-card {
-      background: radial-gradient(circle at top left, #1e1624 0%, #0d0910 100%);
-      border: 1px solid var(--occult-border, #7c3aed);
-      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.8), 0 0 20px var(--occult-glow, rgba(124, 58, 237, 0.28));
-    }
-
-    /* --- SKIN 4: CINEMA MINIMALISTA (CLEAN) --- */
-    .obs-clean-card {
-      background: linear-gradient(90deg, rgba(9, 9, 11, 0.82) 0%, rgba(9, 9, 11, 0.45) 75%, rgba(9, 9, 11, 0) 100%);
-      backdrop-filter: blur(6px);
-      border-left: 3px solid var(--clean-accent, #e4e4e7);
+    .obs-dying-filter {
+      filter: grayscale(1) contrast(1.3) brightness(0.75);
     }
   </style>
 
@@ -5112,40 +5072,13 @@
     const OBS_CFG_KEY = "op_obs_portrait_settings_v1";
     const obsChannel = typeof BroadcastChannel !== "undefined" ? new BroadcastChannel("ordo_obs_portrait_bus") : null;
 
-    const OBS_SKINS = {
-      dossier: {
-        id: "dossier",
-        icon: "🗂",
-        name: "Dossiê Ordo (Clássico)",
-        desc: "Papel de arquivo, foto Polaroid presa com fita e carimbos."
-      },
-      cris: {
-        id: "cris",
-        icon: "📟",
-        name: "Terminal C.R.I.S.",
-        desc: "HUD tático escuro com scanlines, mira e telemetria biométrica."
-      },
-      occult: {
-        id: "occult",
-        icon: "🩸",
-        name: "Grimório Paranormal",
-        desc: "Moldura arcana sombria que brilha conforme a Afinidade."
-      },
-      clean: {
-        id: "clean",
-        icon: "🎬",
-        name: "Cinema Minimalista",
-        desc: "Visual limpo sem caixas pesadas, ideal para webcams compactas."
-      }
-    };
-
     const ELEMENT_INK_PALETTE = {
-      Nenhuma: { ink: "#2c2520", barPv: "#991b1b", barPe: "#b45309", barSan: "#1e40af", neon: "#a855f7", glow: "rgba(168,85,247,0.32)" },
-      Sangue: { ink: "#7f1d1d", barPv: "#dc2626", barPe: "#ea580c", barSan: "#2563eb", neon: "#ef4444", glow: "rgba(239,68,68,0.38)" },
-      Morte: { ink: "#1c1917", barPv: "#991b1b", barPe: "#a16207", barSan: "#1d4ed8", neon: "#a1a1aa", glow: "rgba(161,161,170,0.30)" },
-      Conhecimento: { ink: "#78350f", barPv: "#dc2626", barPe: "#eab308", barSan: "#2563eb", neon: "#facc15", glow: "rgba(250,204,21,0.35)" },
-      Energia: { ink: "#4c1d95", barPv: "#dc2626", barPe: "#9333ea", barSan: "#06b6d4", neon: "#c084fc", glow: "rgba(192,132,252,0.40)" },
-      Medo: { ink: "#1e3a8a", barPv: "#be123c", barPe: "#d97706", barSan: "#38bdf8", neon: "#38bdf8", glow: "rgba(56,189,248,0.38)" }
+      Nenhuma: { ink: "#2c2520", barPv: "#991b1b", barPe: "#b45309", barSan: "#1e40af", stamp: "#3f362f" },
+      Sangue: { ink: "#7f1d1d", barPv: "#991b1b", barPe: "#9a3412", barSan: "#1e3a8a", stamp: "#991b1b" },
+      Morte: { ink: "#1c1917", barPv: "#7f1d1d", barPe: "#78350f", barSan: "#1e3a8a", stamp: "#292524" },
+      Conhecimento: { ink: "#78350f", barPv: "#991b1b", barPe: "#b45309", barSan: "#1d4ed8", stamp: "#92400e" },
+      Energia: { ink: "#4c1d95", barPv: "#991b1b", barPe: "#6d28d9", barSan: "#1e40af", stamp: "#5b21b6" },
+      Medo: { ink: "#1e3a8a", barPv: "#881337", barPe: "#92400e", barSan: "#1e3a8a", stamp: "#1e3a8a" }
     };
 
     const obsApp = getApps().find(a => a.name === "obs-portrait-app")
@@ -5266,7 +5199,6 @@
           p: ag.path || "",
           x: ag.nex || 5,
           a: ag.affinity || "Nenhuma",
-          sk: cfg.skin || "dossier",
           pv: ag.currentPv ?? vitals.maxPv,
           mpv: vitals.maxPv,
           pe: ag.currentPe ?? vitals.maxPe,
@@ -5309,7 +5241,6 @@
             _maxSan: d.msan
           },
           obsCfg: {
-            skin: d.sk || "dossier",
             avatarNormal: d.img || "",
             avatarHurt: d.imgh || "",
             avatarInsane: d.imgi || "",
@@ -5421,7 +5352,6 @@
       const targetAgentId = urlParams.get("agent") || null;
       const targetRoomCode = (urlParams.get("room") || "").trim().toUpperCase();
       const layoutMode = urlParams.get("layout") || "webcam";
-      const forcedSkinParam = urlParams.get("skin") || null;
       const hideBarsParam = urlParams.get("bars") === "0";
       const hideDiceParam = urlParams.get("dice") === "0";
       const embeddedData = decodeStandalonePayload(urlParams.get("d"));
@@ -5450,67 +5380,7 @@
         `;
       }
 
-      function buildRollNoteHtml(rollEvent, skin, palette) {
-        if (skin === "cris") {
-          const valColor = rollEvent.isCrit ? "#facc15" : rollEvent.isFumble ? "#f43f5e" : "#22d3ee";
-          return `
-            <div class="obs-roll-note mb-3 px-4 py-2.5 rounded obs-cris-card flex items-center justify-between gap-3 obs-font-hud">
-              <div class="min-w-0">
-                <div class="text-[10px] uppercase tracking-widest text-cyan-400">▶ TELEMETRIA DE TESTE // ${rollEvent.title}</div>
-                <div class="text-xs text-slate-300 truncate">${rollEvent.detail}</div>
-              </div>
-              <div class="text-3xl font-bold pl-3 border-l border-cyan-500/40" style="color:${valColor}; text-shadow: 0 0 12px ${valColor};">
-                ${rollEvent.result}
-              </div>
-            </div>
-          `;
-        }
-        if (skin === "occult") {
-          const valColor = rollEvent.isCrit ? "#facc15" : rollEvent.isFumble ? "#f43f5e" : palette.neon;
-          return `
-            <div class="obs-roll-note mb-3 px-4 py-2.5 rounded-lg obs-occult-card flex items-center justify-between gap-3 obs-font-clean"
-                 style="--occult-border:${palette.neon}; --occult-glow:${palette.glow};">
-              <div class="min-w-0">
-                <div class="text-[11px] font-bold uppercase tracking-wider text-purple-200 truncate">✦ ${rollEvent.title}</div>
-                <div class="text-xs text-zinc-400 truncate">${rollEvent.detail}</div>
-              </div>
-              <div class="text-3xl font-black pl-3 border-l border-white/15" style="color:${valColor};">
-                ${rollEvent.result}
-              </div>
-            </div>
-          `;
-        }
-        if (skin === "clean") {
-          const valColor = rollEvent.isCrit ? "#facc15" : rollEvent.isFumble ? "#fb7185" : "#ffffff";
-          return `
-            <div class="obs-roll-note mb-2.5 px-3.5 py-2 rounded-r-lg obs-clean-card flex items-center justify-between gap-3 obs-font-clean"
-                 style="--clean-accent:${palette.neon};">
-              <div class="min-w-0">
-                <div class="text-xs font-bold uppercase tracking-wide text-white truncate">${rollEvent.title}</div>
-                <div class="text-[11px] text-zinc-300 truncate">${rollEvent.detail}</div>
-              </div>
-              <div class="text-3xl font-extrabold pl-3 border-l border-white/20" style="color:${valColor};">
-                ${rollEvent.result}
-              </div>
-            </div>
-          `;
-        }
-        // Padrão: dossier
-        return `
-          <div class="obs-roll-note mb-3 px-4 py-2.5 rounded-sm obs-paper-card border-2 border-[#8b7d6b] flex items-center justify-between gap-3">
-            <div class="min-w-0">
-              <div class="text-[11px] obs-font-stamp uppercase tracking-wide text-[#2b231d] truncate">${rollEvent.title}</div>
-              <div class="text-[11px] obs-font-typewriter text-[#574b40] truncate">${rollEvent.detail}</div>
-            </div>
-            <div class="text-3xl obs-font-stamp font-bold pl-3 border-l-2 border-dashed border-[#b5a692]"
-                 style="color: ${rollEvent.isCrit ? "#b45309" : rollEvent.isFumble ? "#991b1b" : palette.ink};">
-              ${rollEvent.result}
-            </div>
-          </div>
-        `;
-      }
-
-      function triggerObsRollPopup(rollEvent, skin, palette) {
+      function triggerObsRollPopup(rollEvent, inkColor) {
         if (hideDiceParam || !rollEvent || !rollEvent.result) return;
         const uniqueId = String(rollEvent.rollId || `${rollEvent.title}|${rollEvent.result}`);
         if (shownRollIds.has(uniqueId)) return;
@@ -5520,7 +5390,18 @@
           shownRollIds.delete(firstKey);
         }
 
-        activeRollHtml = buildRollNoteHtml(rollEvent, skin, palette);
+        activeRollHtml = `
+          <div class="obs-roll-note mb-3 px-4 py-2.5 rounded-sm obs-paper-card border-2 border-[#8b7d6b] flex items-center justify-between gap-3">
+            <div class="min-w-0">
+              <div class="text-[11px] obs-font-stamp uppercase tracking-wide text-[#2b231d] truncate">${rollEvent.title}</div>
+              <div class="text-[11px] obs-font-typewriter text-[#574b40] truncate">${rollEvent.detail}</div>
+            </div>
+            <div class="text-3xl obs-font-stamp font-bold pl-3 border-l-2 border-dashed border-[#b5a692]"
+                 style="color: ${rollEvent.isCrit ? "#b45309" : rollEvent.isFumble ? "#991b1b" : inkColor};">
+              ${rollEvent.result}
+            </div>
+          </div>
+        `;
 
         const slot = document.getElementById("obs-live-roll-slot");
         if (slot) slot.innerHTML = activeRollHtml;
@@ -5538,7 +5419,6 @@
 
         const ag = currentObsAgent;
         const cfg = currentObsCfg || {};
-        const activeSkin = forcedSkinParam || cfg.skin || "dossier";
         const vitals = computeObsAgentVitals(ag);
         const palette = ELEMENT_INK_PALETTE[ag.affinity] || ELEMENT_INK_PALETTE.Nenhuma;
 
@@ -5547,7 +5427,6 @@
         const curSan = ag.currentSan ?? vitals.maxSan;
 
         const stateHash = JSON.stringify({
-          sk: activeSkin, lay: layoutMode,
           n: ag.name, x: ag.nex, a: ag.affinity,
           pv: curPv, mpv: vitals.maxPv,
           pe: curPe, mpe: vitals.maxPe,
@@ -5557,8 +5436,9 @@
           sb: cfg.showBars, sn: cfg.showName, sx: cfg.showNex
         });
 
+        // Se só chegou uma rolagem nova e a ficha não mudou, atualiza SÓ o balão sem re-renderizar o card inteiro
         if (!force && stateHash === lastRenderedHash) {
-          if (rollEvent) triggerObsRollPopup(rollEvent, activeSkin, palette);
+          if (rollEvent) triggerObsRollPopup(rollEvent, palette.ink);
           return;
         }
         lastRenderedHash = stateHash;
@@ -5600,303 +5480,6 @@
         const showName = cfg.showName !== false;
         const showNex = cfg.showNex !== false;
 
-        // ==================== SKIN: TERMINAL C.R.I.S. ====================
-        if (activeSkin === "cris") {
-          const photoHtml = chosenUrl
-            ? `<img src="${chosenUrl}" alt="${ag.name}" class="w-full h-full object-cover object-top transition-all duration-300 ${autoFilterClass}" />`
-            : `<div class="w-full h-full flex items-center justify-center obs-font-hud text-3xl font-bold text-cyan-300 bg-cyan-950/50 ${autoFilterClass}">${initials}</div>`;
-
-          if (layoutMode === "webcam") {
-            stage.innerHTML = `
-              <div class="w-[500px] max-w-full flex flex-col items-stretch obs-font-hud">
-                <div id="obs-live-roll-slot">${activeRollHtml}</div>
-                <div class="obs-cris-card rounded p-3.5 flex items-center gap-4">
-                  <span class="obs-cris-corner top-1 left-1 border-t-2 border-l-2"></span>
-                  <span class="obs-cris-corner top-1 right-1 border-t-2 border-r-2"></span>
-                  <span class="obs-cris-corner bottom-1 left-1 border-b-2 border-l-2"></span>
-                  <span class="obs-cris-corner bottom-1 right-1 border-b-2 border-r-2"></span>
-
-                  <div class="w-28 h-32 shrink-0 relative border border-cyan-500/50 bg-slate-950 overflow-hidden">
-                    ${photoHtml}
-                    ${showNex ? `<span class="absolute bottom-0 inset-x-0 bg-cyan-950/90 border-t border-cyan-500/40 text-center text-[10px] font-bold text-cyan-300 py-0.5">NEX // ${ag.nex || 5}%</span>` : ""}
-                  </div>
-
-                  <div class="flex-1 min-w-0 flex flex-col justify-between gap-2.5">
-                    <div class="flex items-center justify-between gap-2 border-b border-cyan-500/30 pb-1.5">
-                      <div class="min-w-0">
-                        <div class="text-[9px] text-cyan-400/80 tracking-widest">C.R.I.S. // BIO-MONITOR</div>
-                        ${showName ? `<h1 class="text-lg font-bold text-white tracking-wide truncate uppercase">${ag.name || "Agente"}</h1>` : ""}
-                      </div>
-                      ${statusStamp ? `<span class="px-2 py-0.5 bg-rose-500/20 border border-rose-500 text-rose-300 text-[10px] font-bold animate-pulse shrink-0">${statusStamp}</span>` : `<span class="text-[10px] text-emerald-400 shrink-0">● ONLINE</span>`}
-                    </div>
-
-                    ${showBars ? `
-                      <div class="space-y-2">
-                        <div>
-                          <div class="flex justify-between text-xs mb-0.5">
-                            <span class="text-rose-400 font-bold">PV // VITAL</span>
-                            <span class="text-white font-bold">${curPv}<span class="text-slate-400 font-normal">/${vitals.maxPv}</span></span>
-                          </div>
-                          <div class="w-full h-2.5 bg-slate-900 border border-rose-500/40 p-[1px]">
-                            <div class="h-full bg-rose-500 transition-all duration-300" style="width:${pvPct}%; box-shadow: 0 0 8px rgba(244,63,94,0.6);"></div>
-                          </div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-3">
-                          <div>
-                            <div class="flex justify-between text-[11px] mb-0.5">
-                              <span class="text-amber-400 font-bold">PE</span>
-                              <span class="text-white font-bold">${curPe}<span class="text-slate-400 font-normal">/${vitals.maxPe}</span></span>
-                            </div>
-                            <div class="w-full h-2 bg-slate-900 border border-amber-500/40 p-[1px]">
-                              <div class="h-full bg-amber-400 transition-all duration-300" style="width:${pePct}%;"></div>
-                            </div>
-                          </div>
-                          <div>
-                            <div class="flex justify-between text-[11px] mb-0.5">
-                              <span class="text-cyan-400 font-bold">SAN</span>
-                              <span class="text-white font-bold">${curSan}<span class="text-slate-400 font-normal">/${vitals.maxSan}</span></span>
-                            </div>
-                            <div class="w-full h-2 bg-slate-900 border border-cyan-500/40 p-[1px]">
-                              <div class="h-full bg-cyan-400 transition-all duration-300" style="width:${sanPct}%;"></div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ` : ""}
-                  </div>
-                </div>
-              </div>
-            `;
-          } else {
-            stage.innerHTML = `
-              <div class="w-[350px] flex flex-col items-stretch obs-font-hud">
-                <div id="obs-live-roll-slot">${activeRollHtml}</div>
-                <div class="obs-cris-card rounded p-4 space-y-3">
-                  <span class="obs-cris-corner top-1 left-1 border-t-2 border-l-2"></span>
-                  <span class="obs-cris-corner top-1 right-1 border-t-2 border-r-2"></span>
-                  <span class="obs-cris-corner bottom-1 left-1 border-b-2 border-l-2"></span>
-                  <span class="obs-cris-corner bottom-1 right-1 border-b-2 border-r-2"></span>
-
-                  <div class="flex items-center justify-between text-[10px] text-cyan-400 border-b border-cyan-500/30 pb-1">
-                    <span>C.R.I.S. // ID_AGENTE</span>
-                    ${showNex ? `<span class="font-bold">NEX ${ag.nex || 5}%</span>` : ""}
-                  </div>
-                  <div class="w-full h-[265px] border border-cyan-500/40 bg-slate-950 relative overflow-hidden">
-                    ${photoHtml}
-                    ${statusStamp ? `<div class="absolute top-3 right-3 px-2 py-0.5 bg-rose-950/90 border border-rose-500 text-rose-300 text-xs font-bold">${statusStamp}</div>` : ""}
-                  </div>
-                  ${showName ? `<h1 class="text-xl font-bold text-white uppercase tracking-wide truncate">${ag.name || "Agente"}</h1>` : ""}
-                  ${showBars ? `
-                    <div class="space-y-2">
-                      <div>
-                        <div class="flex justify-between text-xs mb-0.5"><span class="text-rose-400 font-bold">PV</span><span class="text-white font-bold">${curPv}/${vitals.maxPv}</span></div>
-                        <div class="w-full h-2.5 bg-slate-900 border border-rose-500/40"><div class="h-full bg-rose-500 transition-all duration-300" style="width:${pvPct}%;"></div></div>
-                      </div>
-                      <div class="grid grid-cols-2 gap-3">
-                        <div>
-                          <div class="flex justify-between text-xs mb-0.5"><span class="text-amber-400 font-bold">PE</span><span class="text-white font-bold">${curPe}/${vitals.maxPe}</span></div>
-                          <div class="w-full h-2 bg-slate-900 border border-amber-500/40"><div class="h-full bg-amber-400 transition-all duration-300" style="width:${pePct}%;"></div></div>
-                        </div>
-                        <div>
-                          <div class="flex justify-between text-xs mb-0.5"><span class="text-cyan-400 font-bold">SAN</span><span class="text-white font-bold">${curSan}/${vitals.maxSan}</span></div>
-                          <div class="w-full h-2 bg-slate-900 border border-cyan-500/40"><div class="h-full bg-cyan-400 transition-all duration-300" style="width:${sanPct}%;"></div></div>
-                        </div>
-                      </div>
-                    </div>
-                  ` : ""}
-                </div>
-              </div>
-            `;
-          }
-          if (rollEvent) triggerObsRollPopup(rollEvent, activeSkin, palette);
-          return;
-        }
-
-        // ==================== SKIN: GRIMÓRIO PARANORMAL ====================
-        if (activeSkin === "occult") {
-          const photoHtml = chosenUrl
-            ? `<img src="${chosenUrl}" alt="${ag.name}" class="w-full h-full object-cover object-top transition-all duration-300 ${autoFilterClass}" />`
-            : `<div class="w-full h-full flex items-center justify-center obs-font-clean text-3xl font-black text-purple-200 bg-purple-950/40 ${autoFilterClass}">${initials}</div>`;
-
-          if (layoutMode === "webcam") {
-            stage.innerHTML = `
-              <div class="w-[500px] max-w-full flex flex-col items-stretch obs-font-clean">
-                <div id="obs-live-roll-slot">${activeRollHtml}</div>
-                <div class="obs-occult-card rounded-xl p-3.5 flex items-center gap-4" style="--occult-border:${palette.neon}; --occult-glow:${palette.glow};">
-                  <div class="w-28 h-32 shrink-0 rounded-lg overflow-hidden relative border-2" style="border-color:${palette.neon};">
-                    ${photoHtml}
-                    ${showNex ? `<span class="absolute bottom-1 inset-x-1 rounded bg-black/80 text-center text-[10px] font-bold tracking-wider py-0.5" style="color:${palette.neon};">NEX ${ag.nex || 5}%</span>` : ""}
-                  </div>
-
-                  <div class="flex-1 min-w-0 flex flex-col justify-between gap-2.5">
-                    <div class="flex items-center justify-between gap-2 border-b border-white/10 pb-1.5">
-                      <div class="min-w-0">
-                        ${showName ? `<h1 class="text-xl font-extrabold text-white tracking-tight truncate">${ag.name || "Agente"}</h1>` : ""}
-                        ${ag.affinity && ag.affinity !== "Nenhuma" ? `<div class="text-[10px] font-bold uppercase tracking-widest" style="color:${palette.neon};">✦ Afinidade: ${ag.affinity}</div>` : ""}
-                      </div>
-                      ${statusStamp ? `<span class="px-2 py-0.5 rounded bg-rose-950 border border-rose-500 text-rose-300 text-[10px] font-bold shrink-0">${statusStamp}</span>` : ""}
-                    </div>
-
-                    ${showBars ? `
-                      <div class="space-y-2">
-                        <div>
-                          <div class="flex justify-between text-xs mb-0.5">
-                            <span class="font-bold text-rose-400">VITALIDADE</span>
-                            <span class="font-extrabold text-white">${curPv}<span class="text-zinc-400 font-normal">/${vitals.maxPv}</span></span>
-                          </div>
-                          <div class="w-full h-2.5 rounded-full bg-black/70 overflow-hidden border border-white/10">
-                            <div class="h-full rounded-full transition-all duration-300" style="width:${pvPct}%; background: linear-gradient(90deg, #991b1b, #ef4444);"></div>
-                          </div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-3">
-                          <div>
-                            <div class="flex justify-between text-[11px] mb-0.5">
-                              <span class="font-bold text-amber-300">ESFORÇO</span>
-                              <span class="font-bold text-white">${curPe}/${vitals.maxPe}</span>
-                            </div>
-                            <div class="w-full h-2 rounded-full bg-black/70 overflow-hidden border border-white/10">
-                              <div class="h-full rounded-full transition-all duration-300" style="width:${pePct}%; background-color:${palette.neon};"></div>
-                            </div>
-                          </div>
-                          <div>
-                            <div class="flex justify-between text-[11px] mb-0.5">
-                              <span class="font-bold text-sky-300">SANIDADE</span>
-                              <span class="font-bold text-white">${curSan}/${vitals.maxSan}</span>
-                            </div>
-                            <div class="w-full h-2 rounded-full bg-black/70 overflow-hidden border border-white/10">
-                              <div class="h-full rounded-full transition-all duration-300" style="width:${sanPct}%; background: linear-gradient(90deg, #1d4ed8, #38bdf8);"></div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ` : ""}
-                  </div>
-                </div>
-              </div>
-            `;
-          } else {
-            stage.innerHTML = `
-              <div class="w-[350px] flex flex-col items-stretch obs-font-clean">
-                <div id="obs-live-roll-slot">${activeRollHtml}</div>
-                <div class="obs-occult-card rounded-xl p-4 space-y-3" style="--occult-border:${palette.neon}; --occult-glow:${palette.glow};">
-                  <div class="w-full h-[270px] rounded-lg overflow-hidden relative border-2" style="border-color:${palette.neon};">
-                    ${photoHtml}
-                    ${statusStamp ? `<div class="absolute top-3 right-3 px-2.5 py-1 rounded bg-rose-950/90 border border-rose-500 text-rose-200 text-xs font-bold">${statusStamp}</div>` : ""}
-                  </div>
-                  <div class="flex items-baseline justify-between gap-2">
-                    ${showName ? `<h1 class="text-xl font-extrabold text-white truncate">${ag.name || "Agente"}</h1>` : `<span></span>`}
-                    ${showNex ? `<span class="text-xs font-bold shrink-0" style="color:${palette.neon};">NEX ${ag.nex || 5}%</span>` : ""}
-                  </div>
-                  ${showBars ? `
-                    <div class="space-y-2">
-                      <div>
-                        <div class="flex justify-between text-xs mb-0.5"><span class="font-bold text-rose-400">PV</span><span class="font-bold text-white">${curPv}/${vitals.maxPv}</span></div>
-                        <div class="w-full h-2.5 rounded-full bg-black/70 overflow-hidden"><div class="h-full rounded-full bg-rose-500 transition-all duration-300" style="width:${pvPct}%;"></div></div>
-                      </div>
-                      <div class="grid grid-cols-2 gap-3">
-                        <div>
-                          <div class="flex justify-between text-xs mb-0.5"><span class="font-bold text-amber-300">PE</span><span class="font-bold text-white">${curPe}/${vitals.maxPe}</span></div>
-                          <div class="w-full h-2 rounded-full bg-black/70 overflow-hidden"><div class="h-full rounded-full transition-all duration-300" style="width:${pePct}%; background-color:${palette.neon};"></div></div>
-                        </div>
-                        <div>
-                          <div class="flex justify-between text-xs mb-0.5"><span class="font-bold text-sky-300">SAN</span><span class="font-bold text-white">${curSan}/${vitals.maxSan}</span></div>
-                          <div class="w-full h-2 rounded-full bg-black/70 overflow-hidden"><div class="h-full rounded-full bg-sky-400 transition-all duration-300" style="width:${sanPct}%;"></div></div>
-                        </div>
-                      </div>
-                    </div>
-                  ` : ""}
-                </div>
-              </div>
-            `;
-          }
-          if (rollEvent) triggerObsRollPopup(rollEvent, activeSkin, palette);
-          return;
-        }
-
-        // ==================== SKIN: CINEMA MINIMALISTA (CLEAN) ====================
-        if (activeSkin === "clean") {
-          const photoHtml = chosenUrl
-            ? `<img src="${chosenUrl}" alt="${ag.name}" class="w-full h-full object-cover object-top transition-all duration-300 ${autoFilterClass}" />`
-            : `<div class="w-full h-full flex items-center justify-center obs-font-clean text-2xl font-bold text-white bg-zinc-900 ${autoFilterClass}">${initials}</div>`;
-
-          if (layoutMode === "webcam") {
-            stage.innerHTML = `
-              <div class="w-[480px] max-w-full flex flex-col items-stretch obs-font-clean">
-                <div id="obs-live-roll-slot">${activeRollHtml}</div>
-                <div class="obs-clean-card rounded-r-xl p-3 flex items-center gap-3.5" style="--clean-accent:${palette.neon};">
-                  <div class="w-24 h-24 rounded-full shrink-0 overflow-hidden border-2 border-white/30 shadow-lg relative">
-                    ${photoHtml}
-                  </div>
-                  <div class="flex-1 min-w-0 space-y-2">
-                    <div class="flex items-baseline gap-2">
-                      ${showName ? `<h1 class="text-xl font-bold text-white drop-shadow truncate">${ag.name || "Agente"}</h1>` : ""}
-                      ${showNex ? `<span class="text-xs font-semibold text-zinc-300 shrink-0">${ag.nex || 5}%</span>` : ""}
-                      ${statusStamp ? `<span class="px-1.5 py-0.5 rounded bg-rose-600 text-white text-[10px] font-bold shrink-0">${statusStamp}</span>` : ""}
-                    </div>
-                    ${showBars ? `
-                      <div class="space-y-1.5">
-                        <div class="flex items-center gap-2">
-                          <span class="text-[11px] font-bold text-rose-400 w-8">PV</span>
-                          <div class="flex-1 h-2 rounded-full bg-white/15 overflow-hidden"><div class="h-full bg-rose-500 transition-all duration-300" style="width:${pvPct}%;"></div></div>
-                          <span class="text-xs font-bold text-white w-14 text-right">${curPv}/${vitals.maxPv}</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                          <span class="text-[11px] font-bold text-amber-300 w-8">PE</span>
-                          <div class="flex-1 h-1.5 rounded-full bg-white/15 overflow-hidden"><div class="h-full bg-amber-400 transition-all duration-300" style="width:${pePct}%;"></div></div>
-                          <span class="text-[11px] font-semibold text-zinc-200 w-14 text-right">${curPe}/${vitals.maxPe}</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                          <span class="text-[11px] font-bold text-sky-300 w-8">SAN</span>
-                          <div class="flex-1 h-1.5 rounded-full bg-white/15 overflow-hidden"><div class="h-full bg-sky-400 transition-all duration-300" style="width:${sanPct}%;"></div></div>
-                          <span class="text-[11px] font-semibold text-zinc-200 w-14 text-right">${curSan}/${vitals.maxSan}</span>
-                        </div>
-                      </div>
-                    ` : ""}
-                  </div>
-                </div>
-              </div>
-            `;
-          } else {
-            stage.innerHTML = `
-              <div class="w-[330px] flex flex-col items-stretch obs-font-clean">
-                <div id="obs-live-roll-slot">${activeRollHtml}</div>
-                <div class="bg-zinc-950/80 backdrop-blur-md border border-white/15 rounded-2xl p-3.5 space-y-2.5 shadow-2xl">
-                  <div class="w-full h-[250px] rounded-xl overflow-hidden relative">
-                    ${photoHtml}
-                    ${statusStamp ? `<div class="absolute top-3 right-3 px-2 py-0.5 rounded bg-rose-600 text-white text-xs font-bold">${statusStamp}</div>` : ""}
-                  </div>
-                  <div class="flex items-baseline justify-between">
-                    ${showName ? `<h1 class="text-lg font-bold text-white truncate">${ag.name || "Agente"}</h1>` : `<span></span>`}
-                    ${showNex ? `<span class="text-xs font-semibold text-zinc-400">NEX ${ag.nex || 5}%</span>` : ""}
-                  </div>
-                  ${showBars ? `
-                    <div class="space-y-1.5">
-                      <div class="flex items-center gap-2">
-                        <span class="text-[11px] font-bold text-rose-400 w-8">PV</span>
-                        <div class="flex-1 h-2 rounded-full bg-white/15 overflow-hidden"><div class="h-full bg-rose-500 transition-all duration-300" style="width:${pvPct}%;"></div></div>
-                        <span class="text-xs font-bold text-white w-14 text-right">${curPv}/${vitals.maxPv}</span>
-                      </div>
-                      <div class="flex items-center gap-2">
-                        <span class="text-[11px] font-bold text-amber-300 w-8">PE</span>
-                        <div class="flex-1 h-1.5 rounded-full bg-white/15 overflow-hidden"><div class="h-full bg-amber-400 transition-all duration-300" style="width:${pePct}%;"></div></div>
-                        <span class="text-[11px] text-zinc-200 w-14 text-right">${curPe}/${vitals.maxPe}</span>
-                      </div>
-                      <div class="flex items-center gap-2">
-                        <span class="text-[11px] font-bold text-sky-300 w-8">SAN</span>
-                        <div class="flex-1 h-1.5 rounded-full bg-white/15 overflow-hidden"><div class="h-full bg-sky-400 transition-all duration-300" style="width:${sanPct}%;"></div></div>
-                        <span class="text-[11px] text-zinc-200 w-14 text-right">${curSan}/${vitals.maxSan}</span>
-                      </div>
-                    </div>
-                  ` : ""}
-                </div>
-              </div>
-            `;
-          }
-          if (rollEvent) triggerObsRollPopup(rollEvent, activeSkin, palette);
-          return;
-        }
-
-        // ==================== SKIN PADRÃO: DOSSIÊ ORDO (CLÁSSICO) ====================
         if (layoutMode === "webcam") {
           const photoHtml = chosenUrl
             ? `<img src="${chosenUrl}" alt="${ag.name}" class="w-full h-full object-cover object-top transition-all duration-300 ${autoFilterClass}" />`
@@ -5983,7 +5566,7 @@
             </div>
           `;
 
-          if (rollEvent) triggerObsRollPopup(rollEvent, activeSkin, palette);
+          if (rollEvent) triggerObsRollPopup(rollEvent, palette.ink);
           return;
         }
 
@@ -6061,7 +5644,7 @@
           </div>
         `;
 
-        if (rollEvent) triggerObsRollPopup(rollEvent, activeSkin, palette);
+        if (rollEvent) triggerObsRollPopup(rollEvent, palette.ink);
       }
 
       function applyCloudPayload(data) {
@@ -6190,214 +5773,297 @@
                 const isFumble = node.classList.contains("border-rose-500");
                 if (result) {
                   const now = Date.now();
+                  // Bloqueia qualquer segundo disparo dentro de 900ms
                   if (now - lastRollDispatchTs < 900) return;
-        lastRollDispatchTs = now;
-
-        const titleEl = logEl.querySelector('.text-\\[11px\\], .font-bold, .uppercase');
-        const valueEl = logEl.querySelector('.text-3xl, .text-2xl, .text-4xl, .font-black');
-        const detailEl = logEl.querySelector('.text-xs, .text-\\[10px\\], .text-zinc-400');
-
-        const title = titleEl ? titleEl.textContent.trim() : 'Rolagem';
-        const total = valueEl ? valueEl.textContent.trim() : '?';
-        const detail = detailEl ? detailEl.textContent.trim() : '';
-
-        // Detecta crítico ou falha crítica pelos textos/classes padrão da ficha
-        const logText = logEl.textContent.toLowerCase();
-        const isCrit = logText.includes('crítico') || logText.includes('desastre') || logEl.innerHTML.includes('emerald') || logEl.innerHTML.includes('red-500');
-
-        showObsRollBanner({ title, total, detail, isCrit });
-      });
-
-      observer.observe(logEl, { childList: true, subtree: true, characterData: true });
-    }
-
-    function showObsRollBanner({ title, total, detail, isCrit }) {
-      const banner = document.getElementById('obs-roll-banner');
-      if (!banner) return;
-
-      const titleNode = document.getElementById('obs-roll-title');
-      const totalNode = document.getElementById('obs-roll-total');
-      const detailNode = document.getElementById('obs-roll-detail');
-
-      if (titleNode) titleNode.textContent = title || 'Teste';
-      if (totalNode) {
-        totalNode.textContent = total || '-';
-        totalNode.style.color = isCrit ? '#fbbf24' : '#ffffff';
+                  lastRollDispatchTs = now;
+                  const rollId = `${now}_${Math.random().toString(36).slice(2, 7)}`;
+                  broadcastObsSnapshot({ title, detail, result, isCrit, isFumble, rollId }, true);
+                  return;
+                }
+              }
+            }
+          }
+        });
+        obsRollWatcher.observe(toastBox, { childList: true });
       }
-      if (detailNode) detailNode.textContent = detail || '';
 
-      banner.classList.remove('opacity-0', 'translate-y-4', 'pointer-events-none');
-      banner.classList.add('opacity-100', 'translate-y-0');
+      function injectObsPortraitButtonAndModal() {
+        const topBarRight = document.querySelector("body > div:first-child .max-w-7xl > div:last-child");
+        if (topBarRight && !document.getElementById("btn-open-obs-modal")) {
+          const btn = document.createElement("button");
+          btn.id = "btn-open-obs-modal";
+          btn.type = "button";
+          btn.className = "px-2.5 py-1 rounded-md bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-sky-200 font-semibold transition flex items-center gap-1.5";
+          btn.innerHTML = `<span>🎥</span> <span class="hidden md:inline">OBS Portrait</span>`;
+          topBarRight.prepend(btn);
+        }
 
-      clearTimeout(obsRollBannerTimer);
-      obsRollBannerTimer = setTimeout(() => {
-        banner.classList.remove('opacity-100', 'translate-y-0');
-        banner.classList.add('opacity-0', 'translate-y-4', 'pointer-events-none');
-      }, 5500);
-    }
-
-    function injectObsToolbarButton() {
-      if (document.getElementById('btn-open-obs-modal')) return;
-
-      // Procura a barra superior de ações da ficha para inserir o botão do OBS
-      const headerActions = document.querySelector('header .flex.items-center.gap-2, header .flex.flex-wrap.items-center');
-      if (!headerActions) return;
-
-      const btn = document.createElement('button');
-      btn.id = 'btn-open-obs-modal';
-      btn.type = 'button';
-      btn.title = 'Configurar Retrato / Overlay para OBS Studio';
-      btn.className = 'px-2.5 py-1.5 rounded bg-purple-950/70 hover:bg-purple-900/90 border border-purple-500/40 text-purple-200 text-xs font-semibold flex items-center gap-1.5 transition-all';
-      btn.innerHTML = `<i data-lucide="tv" class="w-3.5 h-3.5 text-purple-400"></i><span>OBS Portrait</span>`;
-      btn.addEventListener('click', openObsSetupModal);
-
-      headerActions.appendChild(btn);
-      if (window.lucide && typeof window.lucide.createIcons === 'function') {
-        window.lucide.createIcons();
-      }
-    }
-
-    function openObsSetupModal() {
-      let modal = document.getElementById('obs-setup-modal');
-      if (!modal) {
-        modal = document.createElement('div');
-        modal.id = 'obs-setup-modal';
-        modal.className = 'fixed inset-0 z-[120] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4';
-        modal.innerHTML = `
-          <div class="bg-zinc-950 border border-zinc-800 rounded-lg max-w-lg w-full p-5 shadow-2xl text-zinc-100 space-y-4">
-            <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
-              <div class="flex items-center gap-2">
-                <i data-lucide="tv" class="w-5 h-5 text-purple-400"></i>
-                <h3 class="font-bold text-base tracking-wide uppercase">OBS Studio — Stream Portrait</h3>
+        if (!document.getElementById("modal-obs-portrait")) {
+          const modal = document.createElement("div");
+          modal.id = "modal-obs-portrait";
+          modal.className = "fixed inset-0 bg-black/85 backdrop-blur-sm z-50 hidden items-center justify-center p-4";
+          modal.innerHTML = `
+            <div class="bg-[#111114] border border-[#26262e] rounded-2xl max-w-3xl w-full p-6 flex flex-col max-h-[90vh] space-y-4 shadow-2xl">
+              <div class="flex items-center justify-between border-b border-[#26262e] pb-3">
+                <div class="flex items-center gap-2.5">
+                  <span class="text-xl">🎥</span>
+                  <div>
+                    <h3 class="text-base font-bold text-white">OBS Studio — Portrait Estilo Dossiê (Tempo Real)</h3>
+                    <p id="obs-cloud-status-badge" class="text-[11px] font-mono text-zinc-400">${obsSyncStatusText}</p>
+                  </div>
+                </div>
+                <button type="button" id="btn-close-obs-modal" class="text-zinc-400 hover:text-white text-lg px-2">✕</button>
               </div>
-              <button type="button" id="close-obs-modal" class="text-zinc-400 hover:text-white p-1">
-                <i data-lucide="x" class="w-5 h-5"></i>
+              <div id="obs-modal-content" class="overflow-y-auto flex-1 pr-1 space-y-4"></div>
+            </div>
+          `;
+          document.body.appendChild(modal);
+        }
+      }
+
+      function buildObsUrl(agentId, layout = "webcam") {
+        const baseUrl = window.location.href.split("?")[0].split("#")[0];
+        let sessionMeta = {};
+        try {
+          sessionMeta = JSON.parse(localStorage.getItem("op_multiplayer_session_v1") || "{}");
+        } catch (e) {}
+
+        const ag = getActiveRosterAgent();
+        const cfg = ag ? (getObsSettingsMap()[ag.id] || {}) : {};
+        const standalonePayload = ag ? encodeStandalonePayload(ag, cfg) : "";
+
+        const params = new URLSearchParams();
+        params.set("obs", "1");
+        params.set("layout", layout);
+        if (agentId) params.set("agent", agentId);
+        if (sessionMeta.roomCode) params.set("room", sessionMeta.roomCode);
+        if (standalonePayload) params.set("d", standalonePayload);
+        return `${baseUrl}?${params.toString()}`;
+      }
+
+      let selectedObsLayout = "webcam";
+
+      function renderObsConfigModal() {
+        const container = document.getElementById("obs-modal-content");
+        if (!container) return;
+
+        const ag = getActiveRosterAgent();
+        if (!ag) {
+          container.innerHTML = `<p class="text-xs text-zinc-400">Selecione ou crie um agente primeiro.</p>`;
+          return;
+        }
+
+        broadcastObsSnapshot(null, true);
+
+        const cfg = getObsSettingsMap()[ag.id] || {};
+        const obsUrl = buildObsUrl(ag.id, selectedObsLayout);
+        const recSize = selectedObsLayout === "webcam" ? "Largura: 540 × Altura: 250" : "Largura: 390 × Altura: 490";
+
+        container.innerHTML = `
+          <div class="bg-[#09090b] border border-amber-500/35 rounded-2xl p-4 space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <span class="text-xs font-bold text-amber-300 uppercase tracking-wider">1. Formato & Link do OBS</span>
+              <span class="text-[11px] font-mono text-zinc-400">Agente vinculado: <strong class="text-emerald-400">${ag.name} (NEX ${ag.nex || 5}%)</strong></span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+              <button type="button" data-obs-layout="webcam"
+                class="p-2.5 rounded-xl border text-left transition ${selectedObsLayout === "webcam" ? "border-amber-400 bg-amber-500/15 text-white" : "border-[#26262e] bg-[#111114] text-zinc-400 hover:text-zinc-200"}">
+                <div class="font-bold flex items-center justify-between">
+                  <span>🗂 Ficha de Campo (Horizontal)</span>
+                  <span class="text-[10px] font-mono text-amber-300">540×250</span>
+                </div>
+                <p class="text-[11px] text-zinc-400 mt-0.5">Fotografia Polaroid presa com fita, nome datilografado e barras de tinta.</p>
+              </button>
+
+              <button type="button" data-obs-layout="card"
+                class="p-2.5 rounded-xl border text-left transition ${selectedObsLayout === "card" ? "border-amber-400 bg-amber-500/15 text-white" : "border-[#26262e] bg-[#111114] text-zinc-400 hover:text-zinc-200"}">
+                <div class="font-bold flex items-center justify-between">
+                  <span>📎 Prontuário Vertical</span>
+                  <span class="text-[10px] font-mono text-amber-300">390×490</span>
+                </div>
+                <p class="text-[11px] text-zinc-400 mt-0.5">Retrato impresso vertical em papel de arquivo com marcadores de PV/PE/SAN.</p>
               </button>
             </div>
 
-            <p class="text-xs text-zinc-400 leading-relaxed">
-              Use o link abaixo como <strong>Navegador (Browser Source)</strong> no OBS Studio com fundo transparente. O layout prioriza a foto quadrada sem bordas arredondadas, nome do agente e os status principais (PV, PE, SAN) no canto inferior esquerdo.
+            <div class="flex gap-2">
+              <input type="text" id="obs-generated-url" readonly value="${obsUrl}"
+                class="flex-1 bg-[#111114] border border-[#26262e] rounded-xl px-3 py-2 text-xs font-mono text-zinc-200 outline-none" />
+              <button type="button" id="btn-copy-obs-url" class="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold transition shrink-0">
+                📋 Copiar Link OBS
+              </button>
+              <a href="${obsUrl}" target="_blank" class="px-3 py-2 rounded-xl bg-[#18181d] hover:bg-zinc-800 border border-[#26262e] text-xs text-zinc-200 font-medium transition shrink-0">
+                ↗ Testar
+              </a>
+            </div>
+            <p class="text-[11px] text-zinc-400">
+              No OBS Studio: <strong>Fontes (+) → Navegador</strong> → Cole o link acima → Dimensões: <code class="text-amber-300 font-mono">${recSize}</code>.
+              <br><span class="text-amber-300">Dica no OBS:</span> Desmarque <em>"Desativar fonte quando não visível"</em> nas propriedades da fonte Navegador para nunca pausar.
             </p>
+          </div>
 
-            <div class="space-y-2">
-              <label class="block text-[11px] font-bold uppercase tracking-wider text-zinc-400">URL do Retrato (Agente Atual)</label>
-              <div class="flex gap-2">
-                <input id="obs-generated-url" type="text" readonly class="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-xs text-purple-300 font-mono select-all" />
-                <button type="button" id="copy-obs-url-btn" class="px-3 py-2 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded shrink-0 transition">
-                  Copiar
-                </button>
+          <div class="bg-[#09090b] border border-[#26262e] rounded-2xl p-4 space-y-3">
+            <span class="block text-xs font-bold text-white uppercase tracking-wider">2. Fotografia do Agente (URL ou Upload do Computador)</span>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+              <div>
+                <label class="block text-zinc-400 mb-1">Foto Padrão (Normal)</label>
+                <div class="flex gap-1.5">
+                  <input type="text" id="obs-input-normal" value="${cfg.avatarNormal || ""}" placeholder="https://... ou clique na pasta →"
+                    class="flex-1 bg-[#111114] border border-[#26262e] rounded-xl px-3 py-2 text-white outline-none" />
+                  <label class="px-2.5 py-2 rounded-xl bg-[#18181d] hover:bg-zinc-800 border border-[#26262e] text-zinc-300 cursor-pointer shrink-0">
+                    📁 <input type="file" accept="image/*" data-obs-file="avatarNormal" class="hidden" />
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-rose-300 mb-1">Foto Machucado (≤ 50% PV) <span class="text-zinc-500">(opcional)</span></label>
+                <div class="flex gap-1.5">
+                  <input type="text" id="obs-input-hurt" value="${cfg.avatarHurt || ""}" placeholder="Opcional (filtro sépia/contraste se vazio)"
+                    class="flex-1 bg-[#111114] border border-[#26262e] rounded-xl px-3 py-2 text-white outline-none" />
+                  <label class="px-2.5 py-2 rounded-xl bg-[#18181d] hover:bg-zinc-800 border border-[#26262e] text-zinc-300 cursor-pointer shrink-0">
+                    📁 <input type="file" accept="image/*" data-obs-file="avatarHurt" class="hidden" />
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-sky-300 mb-1">Foto Perturbado / Enlouquecendo <span class="text-zinc-500">(opcional)</span></label>
+                <div class="flex gap-1.5">
+                  <input type="text" id="obs-input-insane" value="${cfg.avatarInsane || ""}" placeholder="Opcional (filtro automático se vazio)"
+                    class="flex-1 bg-[#111114] border border-[#26262e] rounded-xl px-3 py-2 text-white outline-none" />
+                  <label class="px-2.5 py-2 rounded-xl bg-[#18181d] hover:bg-zinc-800 border border-[#26262e] text-zinc-300 cursor-pointer shrink-0">
+                    📁 <input type="file" accept="image/*" data-obs-file="avatarInsane" class="hidden" />
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-zinc-400 mb-1">Foto Morrendo (0 PV) <span class="text-zinc-500">(opcional)</span></label>
+                <div class="flex gap-1.5">
+                  <input type="text" id="obs-input-dying" value="${cfg.avatarDying || ""}" placeholder="Opcional (P&B automático se vazio)"
+                    class="flex-1 bg-[#111114] border border-[#26262e] rounded-xl px-3 py-2 text-white outline-none" />
+                  <label class="px-2.5 py-2 rounded-xl bg-[#18181d] hover:bg-zinc-800 border border-[#26262e] text-zinc-300 cursor-pointer shrink-0">
+                    📁 <input type="file" accept="image/*" data-obs-file="avatarDying" class="hidden" />
+                  </label>
+                </div>
               </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-3 pt-1">
-              <label class="flex items-center gap-2 text-xs text-zinc-300 cursor-pointer bg-zinc-900/70 p-2.5 rounded border border-zinc-800">
-                <input type="checkbox" id="obs-opt-hide-bars" class="accent-purple-500" />
-                <span>Ocultar barras (só números)</span>
+            <div class="flex flex-wrap items-center gap-5 pt-2 border-t border-[#26262e] text-xs text-zinc-300">
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" id="obs-chk-bars" ${cfg.showBars !== false ? "checked" : ""} />
+                <span>Mostrar Barras & Números (PV / PE / SAN)</span>
               </label>
-              <label class="flex items-center gap-2 text-xs text-zinc-300 cursor-pointer bg-zinc-900/70 p-2.5 rounded border border-zinc-800">
-                <input type="checkbox" id="obs-opt-chroma" class="accent-purple-500" />
-                <span>Fundo Chroma Key (#00FF00)</span>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" id="obs-chk-name" ${cfg.showName !== false ? "checked" : ""} />
+                <span>Mostrar Nome do Personagem</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" id="obs-chk-nex" ${cfg.showNex !== false ? "checked" : ""} />
+                <span>Mostrar NEX na Foto</span>
               </label>
             </div>
 
-            <div class="bg-zinc-900/60 border border-zinc-800/80 rounded p-3 text-[11px] text-zinc-400 space-y-1">
-              <div><strong class="text-zinc-200">Dimensões recomendadas no OBS:</strong> Largura <code class="text-purple-300">650</code> × Altura <code class="text-purple-300">300</code></div>
-              <div><strong class="text-zinc-200">Sincronização ao vivo:</strong> Se estiver conectado a uma Sala Multiplayer, o retrato atualiza automaticamente mesmo em outro navegador/OBS.</div>
-            </div>
-
-            <div class="flex justify-end gap-2 pt-2">
-              <a id="obs-preview-link" href="#" target="_blank" rel="noopener" class="px-3.5 py-2 rounded bg-zinc-800 hover:bg-zinc-700 text-xs font-semibold text-zinc-200">
-                Abrir Preview
-              </a>
-              <button type="button" id="done-obs-modal" class="px-4 py-2 rounded bg-purple-600 hover:bg-purple-500 text-xs font-bold text-white">
-                Concluir
+            <div class="flex justify-end pt-1">
+              <button type="button" id="btn-save-obs-cfg" class="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold transition">
+                Salvar & Atualizar Link
               </button>
             </div>
           </div>
         `;
-        document.body.appendChild(modal);
-
-        const updateUrl = () => {
-          const url = new URL(window.location.href);
-          url.searchParams.set('obs', '1');
-          const hideBars = document.getElementById('obs-opt-hide-bars')?.checked;
-          const chroma = document.getElementById('obs-opt-chroma')?.checked;
-          if (hideBars) url.searchParams.set('nobars', '1');
-          else url.searchParams.delete('nobars');
-          if (chroma) url.searchParams.set('chroma', '1');
-          else url.searchParams.delete('chroma');
-
-          const activeId = window.currentAgentId || localStorage.getItem('ordem_active_agent_id');
-          if (activeId) url.searchParams.set('agent', activeId);
-
-          const finalHref = url.toString();
-          const input = document.getElementById('obs-generated-url');
-          const preview = document.getElementById('obs-preview-link');
-          if (input) input.value = finalHref;
-          if (preview) preview.href = finalHref;
-        };
-
-        modal.querySelector('#obs-opt-hide-bars')?.addEventListener('change', updateUrl);
-        modal.querySelector('#obs-opt-chroma')?.addEventListener('change', updateUrl);
-
-        modal.querySelector('#copy-obs-url-btn')?.addEventListener('click', () => {
-          const input = document.getElementById('obs-generated-url');
-          if (!input) return;
-          navigator.clipboard?.writeText(input.value);
-          const btn = document.getElementById('copy-obs-url-btn');
-          if (btn) {
-            btn.textContent = 'Copiado!';
-            setTimeout(() => { btn.textContent = 'Copiar'; }, 1800);
-          }
-        });
-
-        const closeModal = () => modal.classList.add('hidden');
-        modal.querySelector('#close-obs-modal')?.addEventListener('click', closeModal);
-        modal.querySelector('#done-obs-modal')?.addEventListener('click', closeModal);
-        modal.addEventListener('click', (e) => {
-          if (e.target === modal) closeModal();
-        });
       }
 
-      // Atualiza URL sempre que abrir
-      const url = new URL(window.location.href);
-      url.searchParams.set('obs', '1');
-      const activeId = window.currentAgentId || localStorage.getItem('ordem_active_agent_id');
-      if (activeId) url.searchParams.set('agent', activeId);
-      const input = document.getElementById('obs-generated-url');
-      const preview = document.getElementById('obs-preview-link');
-      if (input) input.value = url.toString();
-      if (preview) preview.href = url.toString();
-
-      modal.classList.remove('hidden');
-      if (window.lucide && typeof window.lucide.createIcons === 'function') {
-        window.lucide.createIcons();
-      }
-    }
-
-    // Inicializa modo OBS Portrait ou injeta o botão na barra da ficha
-    function bootstrapObsPortrait() {
-      const params = new URLSearchParams(window.location.search);
-      const isObsMode = params.get('obs') === '1' || params.get('portrait') === '1';
-
-      if (isObsMode) {
-        if (typeof initObsPortraitMode === 'function') {
-          initObsPortraitMode(params);
+      document.addEventListener("click", (e) => {
+        const layoutBtn = e.target.closest("[data-obs-layout]");
+        if (layoutBtn) {
+          selectedObsLayout = layoutBtn.getAttribute("data-obs-layout");
+          renderObsConfigModal();
+          return;
         }
+
+        const btn = e.target.closest("button");
+        if (!btn) return;
+
+        if (btn.id === "btn-open-obs-modal") {
+          const modal = document.getElementById("modal-obs-portrait");
+          if (modal) {
+            modal.classList.remove("hidden");
+            modal.classList.add("flex");
+            renderObsConfigModal();
+          }
+        } else if (btn.id === "btn-close-obs-modal") {
+          const modal = document.getElementById("modal-obs-portrait");
+          if (modal) {
+            modal.classList.add("hidden");
+            modal.classList.remove("flex");
+          }
+        } else if (btn.id === "btn-copy-obs-url") {
+          const input = document.getElementById("obs-generated-url");
+          if (input) {
+            input.select();
+            document.execCommand("copy");
+            btn.textContent = "✓ Link Copiado!";
+            setTimeout(() => { btn.textContent = "📋 Copiar Link OBS"; }, 2000);
+          }
+        } else if (btn.id === "btn-save-obs-cfg") {
+          const ag = getActiveRosterAgent();
+          if (!ag) return;
+          saveObsSettingsForAgent(ag.id, {
+            avatarNormal: document.getElementById("obs-input-normal")?.value.trim() || "",
+            avatarHurt: document.getElementById("obs-input-hurt")?.value.trim() || "",
+            avatarInsane: document.getElementById("obs-input-insane")?.value.trim() || "",
+            avatarDying: document.getElementById("obs-input-dying")?.value.trim() || "",
+            showBars: document.getElementById("obs-chk-bars")?.checked !== false,
+            showName: document.getElementById("obs-chk-name")?.checked !== false,
+            showNex: document.getElementById("obs-chk-nex")?.checked !== false
+          });
+          renderObsConfigModal();
+          const savedBtn = document.getElementById("btn-save-obs-cfg");
+          if (savedBtn) {
+            savedBtn.textContent = "✓ Salvo & Link Atualizado!";
+            setTimeout(() => { savedBtn.textContent = "Salvar & Atualizar Link"; }, 2000);
+          }
+        }
+      });
+
+      document.addEventListener("change", (e) => {
+        const fileInput = e.target.closest("input[data-obs-file]");
+        if (!fileInput || !fileInput.files?.[0]) return;
+        const fieldKey = fileInput.getAttribute("data-obs-file");
+        const reader = new FileReader();
+        reader.onload = async (ev) => {
+          const compressed = await compressImageDataUrl(ev.target.result, 280, 0.72);
+          const textInputId = {
+            avatarNormal: "obs-input-normal",
+            avatarHurt: "obs-input-hurt",
+            avatarInsane: "obs-input-insane",
+            avatarDying: "obs-input-dying"
+          }[fieldKey];
+          const textInput = document.getElementById(textInputId);
+          if (textInput) textInput.value = compressed;
+        };
+        reader.readAsDataURL(fileInput.files[0]);
+      });
+
+      function bootObsConfigModule() {
+        injectObsPortraitButtonAndModal();
         attachObsRollListener();
+        broadcastObsSnapshot(null, true);
+        setInterval(() => {
+          if (!document.getElementById("btn-open-obs-modal")) {
+            injectObsPortraitButtonAndModal();
+          }
+        }, 1500);
+      }
+
+      if (document.readyState === "loading") {
+        window.addEventListener("DOMContentLoaded", bootObsConfigModule);
       } else {
-        injectObsToolbarButton();
-        // Garante injeção caso o header renderize assincronamente
-        setTimeout(injectObsToolbarButton, 600);
+        bootObsConfigModule();
       }
     }
-
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', bootstrapObsPortrait);
-    } else {
-      bootstrapObsPortrait();
-    }
-  })();
   </script>
 </body>
 </html>
