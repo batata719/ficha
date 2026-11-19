@@ -5269,6 +5269,10 @@
         }
 
         const nowTs = Date.now();
+        const rollPayload = rollEvent
+          ? { ...rollEvent, rollId: rollEvent.rollId || nowTs }
+          : null;
+
         const payload = {
           agent: {
             id: ag.id,
@@ -5288,7 +5292,7 @@
             bonusSan: ag.bonusSan || 0
           },
           obsCfg: cleanCfg,
-          rollEvent: rollEvent ? { ...rollEvent, rollId: nowTs } : null,
+          rollEvent: rollPayload,
           updatedAt: nowTs
         };
 
@@ -5316,22 +5320,26 @@
       const ag = getActiveRosterAgent();
       if (!ag) return;
       const cfg = getObsSettingsMap()[ag.id] || {};
+      const rollWithId = rollEvent
+        ? { ...rollEvent, rollId: rollEvent.rollId || Date.now() }
+        : null;
+
       const payload = {
         type: "OBS_PORTRAIT_UPDATE",
         agent: ag,
         obsCfg: cfg,
-        rollEvent,
+        rollEvent: rollWithId,
         ts: Date.now()
       };
       if (obsChannel) obsChannel.postMessage(payload);
 
       clearTimeout(obsCloudSyncTimer);
       if (immediate) {
-        pushObsCloudStream(ag, cfg, rollEvent);
+        pushObsCloudStream(ag, cfg, rollWithId);
       } else {
         obsCloudSyncTimer = setTimeout(() => {
-          pushObsCloudStream(ag, cfg, rollEvent);
-        }, rollEvent ? 20 : 100);
+          pushObsCloudStream(ag, cfg, rollWithId);
+        }, rollWithId ? 20 : 100);
       }
     }
 
@@ -5360,6 +5368,7 @@
       let currentObsCfg = embeddedData?.obsCfg || {};
       let lastRollTimeout = null;
       let lastSeenRollId = null;
+      let lastRenderedRollKey = "";
       let lastRenderedHash = "";
 
       function showObsDiagnostic(msg) {
@@ -5374,6 +5383,23 @@
 
       function renderObsOverlay(rollEvent = null, force = false) {
         if (!currentObsAgent) return;
+
+        // Bloqueia rolagem duplicada vinda simultaneamente do BroadcastChannel e do Firestore
+        if (rollEvent) {
+          const rollKey = `${rollEvent.title}|${rollEvent.detail}|${rollEvent.result}`;
+          if (rollEvent.rollId && rollEvent.rollId === lastSeenRollId) {
+            rollEvent = null;
+          } else if (rollKey === lastRenderedRollKey) {
+            rollEvent = null;
+          } else {
+            if (rollEvent.rollId) lastSeenRollId = rollEvent.rollId;
+            lastRenderedRollKey = rollKey;
+            setTimeout(() => {
+              if (lastRenderedRollKey === rollKey) lastRenderedRollKey = "";
+            }, 2500);
+          }
+        }
+
         const ag = currentObsAgent;
         const cfg = currentObsCfg || {};
         const vitals = computeObsAgentVitals(ag);
@@ -5635,12 +5661,7 @@
         if (data.obsCfg) {
           currentObsCfg = { ...currentObsCfg, ...data.obsCfg };
         }
-        let newRoll = null;
-        if (data.rollEvent && data.rollEvent.rollId && data.rollEvent.rollId !== lastSeenRollId) {
-          lastSeenRollId = data.rollEvent.rollId;
-          newRoll = data.rollEvent;
-        }
-        renderObsOverlay(newRoll);
+        renderObsOverlay(data.rollEvent || null);
       }
 
       function syncFromLocalStorage() {
@@ -5660,24 +5681,7 @@
         } catch (e) {}
         return false;
       }
-      let lastRenderedRollKey = "";
 
-      function renderObsOverlay(rollEvent = null, force = false) {
-        if (!currentObsAgent) return;
-
-        // Ignora rolagem duplicada vinda simultaneamente do BroadcastChannel e do Firestore
-        if (rollEvent) {
-          const rollKey = `${rollEvent.title}|${rollEvent.detail}|${rollEvent.result}`;
-          if (rollEvent.rollId && rollEvent.rollId === lastSeenRollId) {
-            rollEvent = null;
-          } else if (rollKey === lastRenderedRollKey && !force) {
-            rollEvent = null;
-          } else {
-            if (rollEvent.rollId) lastSeenRollId = rollEvent.rollId;
-            lastRenderedRollKey = rollKey;
-            setTimeout(() => { if (lastRenderedRollKey === rollKey) lastRenderedRollKey = ""; }, 2500);
-          }
-        }
       if (obsChannel) {
         obsChannel.onmessage = (ev) => {
           const data = ev.data;
@@ -5749,6 +5753,8 @@
     if (!isObsMode) {
       let lastRosterJson = localStorage.getItem("op_agents_roster_v1") || "";
       let lastCfgJson = localStorage.getItem(OBS_CFG_KEY) || "";
+      let lastDispatchedRollSig = "";
+      let lastDispatchedRollTs = 0;
 
       setInterval(() => {
         const curRoster = localStorage.getItem("op_agents_roster_v1") || "";
@@ -5759,9 +5765,6 @@
           broadcastObsSnapshot(null, true);
         }
       }, 400);
-
-      let lastDispatchedRollSig = "";
-      let lastDispatchedRollTs = 0;
 
       function attachObsRollListener() {
         const toastBox = document.getElementById("toast-container");
@@ -5789,8 +5792,6 @@
             });
           });
         });
-        obsRollWatcher.observe(toastBox, { childList: true });
-      }
         obsRollWatcher.observe(toastBox, { childList: true });
       }
 
