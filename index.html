@@ -5121,61 +5121,26 @@
     if (isObsMode) {
       document.documentElement.classList.add("obs-stream-mode");
 
-      const stage = document.createElement("div");
-      stage.id = "obs-stream-stage";
-      stage.className = "w-screen h-screen flex items-end justify-center p-6 select-none relative";
-      document.body.appendChild(stage);
-
       const targetAgentId = urlParams.get("agent") || null;
       const targetRoomCode = (urlParams.get("room") || "").trim().toUpperCase();
-      const layoutMode = urlParams.get("layout") || "card"; // card | minimal | compact
+      const layoutMode = urlParams.get("layout") || "card"; // card | compact | webcam
       const hideBarsParam = urlParams.get("bars") === "0";
       const hideDiceParam = urlParams.get("dice") === "0";
+
+      const stage = document.createElement("div");
+      stage.id = "obs-stream-stage";
+      stage.className = layoutMode === "webcam"
+        ? "w-screen h-screen flex items-end justify-start p-4 select-none relative"
+        : "w-screen h-screen flex items-end justify-center p-6 select-none relative";
+      document.body.appendChild(stage);
 
       let currentObsAgent = null;
       let currentObsCfg = {};
       let lastRollTimeout = null;
 
-      function resolvePortraitImage(ag, cfg, vitals) {
-        const curPv = ag.currentPv ?? vitals.maxPv;
-        const curSan = ag.currentSan ?? vitals.maxSan;
-        const isDying = curPv <= 0;
-        const isInsane = curSan <= 0;
-        const isHurt = curPv <= Math.floor(vitals.maxPv / 2);
-        const isPerturbed = curSan <= Math.floor(vitals.maxSan / 2);
-
-        let chosenUrl = cfg.avatarNormal || "";
-        let autoFilterClass = "";
-        let statusLabel = "";
-
-        if (isDying) {
-          chosenUrl = cfg.avatarDying || cfg.avatarHurt || chosenUrl;
-          autoFilterClass = cfg.avatarDying ? "" : "obs-dying-filter";
-          statusLabel = "MORRENDO";
-        } else if (isInsane) {
-          chosenUrl = cfg.avatarInsane || cfg.avatarHurt || chosenUrl;
-          autoFilterClass = cfg.avatarInsane ? "" : "obs-mad-filter";
-          statusLabel = "ENLOUQUECENDO";
-        } else if (isHurt) {
-          chosenUrl = cfg.avatarHurt || chosenUrl;
-          autoFilterClass = cfg.avatarHurt ? "" : "obs-hurt-filter";
-          statusLabel = "MACHUCADO";
-        } else if (isPerturbed) {
-          chosenUrl = cfg.avatarInsane || chosenUrl;
-          autoFilterClass = cfg.avatarInsane ? "" : "obs-mad-filter";
-          statusLabel = "PERTURBADO";
-        }
-
-        return { chosenUrl, autoFilterClass, statusLabel };
-      }
-
       function renderObsOverlay(rollEvent = null) {
         if (!currentObsAgent) {
-          stage.innerHTML = `
-            <div class="px-4 py-2 rounded-xl bg-black/70 border border-purple-500/40 text-xs font-mono text-purple-200">
-              Aguardando sincronização do Agente...
-            </div>
-          `;
+          stage.innerHTML = `<div class="px-4 py-2 rounded-xl bg-black/80 text-zinc-300 text-xs font-mono border border-zinc-700">Aguardando ficha ativa do agente...</div>`;
           return;
         }
 
@@ -5183,19 +5148,36 @@
         const cfg = currentObsCfg || {};
         const vitals = computeObsAgentVitals(ag);
         const theme = ELEMENT_OBS_COLORS[ag.affinity] || ELEMENT_OBS_COLORS.Nenhuma;
-        const { chosenUrl, autoFilterClass, statusLabel } = resolvePortraitImage(ag, cfg, vitals);
 
-        const curPv = Math.max(0, ag.currentPv ?? vitals.maxPv);
-        const curPe = Math.max(0, ag.currentPe ?? vitals.maxPe);
-        const curSan = Math.max(0, ag.currentSan ?? vitals.maxSan);
+        const curPv = ag.currentPv ?? vitals.maxPv;
+        const curPe = ag.currentPe ?? vitals.maxPe;
+        const curSan = ag.currentSan ?? vitals.maxSan;
 
-        const pvPct = Math.min(100, Math.round((curPv / vitals.maxPv) * 100));
-        const pePct = Math.min(100, Math.round((curPe / vitals.maxPe) * 100));
-        const sanPct = Math.min(100, Math.round((curSan / vitals.maxSan) * 100));
+        const pvPct = Math.min(100, Math.max(0, Math.round((curPv / vitals.maxPv) * 100)));
+        const pePct = Math.min(100, Math.max(0, Math.round((curPe / vitals.maxPe) * 100)));
+        const sanPct = Math.min(100, Math.max(0, Math.round((curSan / vitals.maxSan) * 100)));
 
-        const showBars = !hideBarsParam && cfg.showBars !== false;
-        const showName = cfg.showName !== false;
-        const showNex = cfg.showNex !== false;
+        const isDying = curPv <= 0;
+        const isHurt = curPv > 0 && curPv <= Math.floor(vitals.maxPv / 2);
+        const isInsane = curSan <= Math.floor(vitals.maxSan / 2);
+
+        let chosenUrl = cfg.avatarNormal || "";
+        let autoFilterClass = "";
+        let statusLabel = "";
+
+        if (isDying) {
+          chosenUrl = cfg.avatarDying || cfg.avatarHurt || cfg.avatarNormal || "";
+          autoFilterClass = cfg.avatarDying ? "" : "obs-dying-filter";
+          statusLabel = "MORRENDO";
+        } else if (isInsane) {
+          chosenUrl = cfg.avatarInsane || cfg.avatarNormal || "";
+          autoFilterClass = cfg.avatarInsane ? "" : "obs-mad-filter";
+          statusLabel = curSan <= 0 ? "ENLOUQUECENDO" : "PERTURBADO";
+        } else if (isHurt) {
+          chosenUrl = cfg.avatarHurt || cfg.avatarNormal || "";
+          autoFilterClass = cfg.avatarHurt ? "" : "obs-hurt-filter";
+          statusLabel = "MACHUCADO";
+        }
 
         const initials = (ag.name || "AG")
           .trim()
@@ -5204,23 +5186,27 @@
           .map(w => w[0]?.toUpperCase() || "")
           .join("") || "AG";
 
+        const showBars = !hideBarsParam && cfg.showBars !== false;
+        const showName = cfg.showName !== false;
+        const showNex = cfg.showNex !== false;
+
         const avatarVisual = chosenUrl
-          ? `<img src="${chosenUrl}" alt="${ag.name}" class="w-full h-full object-cover object-top ${autoFilterClass} transition-all duration-300" style="animation: obsPortraitPulse 5s ease-in-out infinite;" />`
-          : `<div class="w-full h-full flex items-center justify-center font-mono font-bold text-5xl text-white/90 ${autoFilterClass}"
-               style="background: radial-gradient(circle at 50% 30%, ${theme.glow}, #09090b 75%);">
+          ? `<img src="${chosenUrl}" alt="${ag.name}" class="w-full h-full object-cover object-top transition-all duration-300 ${autoFilterClass}" style="animation: obsPortraitPulse 5s ease-in-out infinite;" />`
+          : `<div class="w-full h-full flex items-center justify-center font-mono font-extrabold text-6xl text-white transition-all duration-300 ${autoFilterClass}"
+               style="background: radial-gradient(circle at 50% 35%, ${theme.glow}, #09090b 78%);">
                ${initials}
              </div>`;
 
         const existingRoll = document.getElementById("obs-live-roll-slot")?.innerHTML || "";
         const rollHtml = (!hideDiceParam && rollEvent)
           ? `
-            <div class="obs-roll-banner mb-3 px-4 py-2.5 rounded-2xl bg-[#09090b]/95 border-2 shadow-2xl flex items-center justify-between gap-4 backdrop-blur-md"
-                 style="border-color: ${rollEvent.isCrit ? "#fbbf24" : rollEvent.isFumble ? "#f43f5e" : theme.primary}; box-shadow: 0 0 25px ${theme.glow};">
+            <div class="obs-roll-banner mb-2.5 px-3.5 py-2 rounded-2xl bg-[#09090b]/95 border-2 shadow-2xl flex items-center justify-between gap-3 backdrop-blur-md"
+                 style="border-color: ${rollEvent.isCrit ? "#fbbf24" : rollEvent.isFumble ? "#f43f5e" : theme.primary}; box-shadow: 0 0 22px ${theme.glow};">
               <div class="min-w-0">
-                <div class="text-[11px] font-bold uppercase tracking-wider text-zinc-300 truncate">${rollEvent.title}</div>
-                <div class="text-[11px] font-mono text-zinc-400 truncate">${rollEvent.detail}</div>
+                <div class="text-[10px] font-bold uppercase tracking-wider text-zinc-300 truncate">${rollEvent.title}</div>
+                <div class="text-[10px] font-mono text-zinc-400 truncate">${rollEvent.detail}</div>
               </div>
-              <div class="text-3xl font-mono font-black pl-3 border-l border-zinc-800"
+              <div class="text-2xl font-mono font-black pl-2.5 border-l border-zinc-800"
                    style="color: ${rollEvent.isCrit ? "#fde047" : rollEvent.isFumble ? "#fb7185" : theme.primary};">
                 ${rollEvent.result}
               </div>
@@ -5228,6 +5214,106 @@
           `
           : existingRoll;
 
+        // ==================== LAYOUT HUD HORIZONTAL PARA CANTO DA WEBCAM ====================
+        if (layoutMode === "webcam") {
+          const smallAvatar = chosenUrl
+            ? `<img src="${chosenUrl}" alt="${ag.name}" class="w-full h-full object-cover object-top ${autoFilterClass}" />`
+            : `<div class="w-full h-full flex items-center justify-center font-mono font-extrabold text-2xl text-white ${autoFilterClass}"
+                 style="background: radial-gradient(circle at 50% 30%, ${theme.glow}, #09090b 80%);">
+                 ${initials}
+               </div>`;
+
+          stage.innerHTML = `
+            <div class="w-[430px] max-w-full flex flex-col items-stretch">
+              <div id="obs-live-roll-slot">${rollHtml}</div>
+
+              <div class="relative flex items-center gap-3 p-2.5 rounded-2xl bg-[#09090b]/92 border-2 shadow-2xl backdrop-blur-md"
+                   style="border-color: ${theme.primary}; box-shadow: 0 8px 30px rgba(0,0,0,0.88), 0 0 18px ${theme.glow};">
+                
+                <!-- Mini Portrait Lateral -->
+                <div class="relative w-20 h-20 rounded-xl overflow-hidden shrink-0 border bg-black" style="border-color: ${theme.primary};">
+                  ${smallAvatar}
+                  ${showNex ? `
+                    <span class="absolute bottom-1 left-1 right-1 text-center py-0.2 rounded bg-black/85 text-[9px] font-mono font-bold text-white">
+                      NEX ${ag.nex || 5}%
+                    </span>` : ""}
+                </div>
+
+                <!-- Nome + Barras Compactas -->
+                <div class="flex-1 min-w-0 space-y-1.5">
+                  <div class="flex items-center justify-between gap-2">
+                    ${showName ? `
+                      <div class="min-w-0">
+                        <h1 class="text-sm font-extrabold text-white tracking-tight truncate leading-tight">
+                          ${ag.name || "Agente"}
+                        </h1>
+                        <p class="text-[10px] font-mono text-zinc-400 truncate">
+                          ${ag.charClass || ""} • ${ag.path || ""}
+                        </p>
+                      </div>` : `<span></span>`}
+
+                    ${statusLabel ? `
+                      <span class="px-2 py-0.5 rounded bg-rose-600 text-white text-[9px] font-mono font-bold uppercase animate-pulse shrink-0">
+                        ${statusLabel}
+                      </span>` : (ag.affinity && ag.affinity !== "Nenhuma" ? `
+                      <span class="px-2 py-0.5 rounded bg-black/80 border border-zinc-700 text-[9px] font-mono font-bold uppercase shrink-0"
+                            style="color: ${theme.primary};">
+                        ${theme.badge}
+                      </span>` : "")}
+                  </div>
+
+                  ${showBars ? `
+                    <div class="space-y-1 font-mono">
+                      <!-- Barra PV -->
+                      <div>
+                        <div class="flex justify-between text-[10px] font-bold leading-none mb-0.5">
+                          <span class="text-rose-400">PV</span>
+                          <span class="text-white">${curPv}/${vitals.maxPv}</span>
+                        </div>
+                        <div class="w-full h-2 bg-zinc-900 rounded-full overflow-hidden border border-zinc-800">
+                          <div class="h-full bg-gradient-to-r from-rose-600 to-rose-400 transition-all duration-300" style="width:${pvPct}%"></div>
+                        </div>
+                      </div>
+
+                      <!-- Barras PE & SAN Lado a Lado -->
+                      <div class="grid grid-cols-2 gap-2">
+                        <div>
+                          <div class="flex justify-between text-[9px] font-bold leading-none mb-0.5">
+                            <span class="text-amber-300">PE</span>
+                            <span class="text-white">${curPe}/${vitals.maxPe}</span>
+                          </div>
+                          <div class="w-full h-1.5 bg-zinc-900 rounded-full overflow-hidden border border-zinc-800">
+                            <div class="h-full bg-gradient-to-r from-amber-500 to-yellow-300 transition-all duration-300" style="width:${pePct}%"></div>
+                          </div>
+                        </div>
+                        <div>
+                          <div class="flex justify-between text-[9px] font-bold leading-none mb-0.5">
+                            <span class="text-sky-300">SAN</span>
+                            <span class="text-white">${curSan}/${vitals.maxSan}</span>
+                          </div>
+                          <div class="w-full h-1.5 bg-zinc-900 rounded-full overflow-hidden border border-zinc-800">
+                            <div class="h-full bg-gradient-to-r from-sky-600 to-cyan-300 transition-all duration-300" style="width:${sanPct}%"></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ` : ""}
+                </div>
+              </div>
+            </div>
+          `;
+
+          if (rollEvent) {
+            clearTimeout(lastRollTimeout);
+            lastRollTimeout = setTimeout(() => {
+              const slot = document.getElementById("obs-live-roll-slot");
+              if (slot) slot.innerHTML = "";
+            }, 4800);
+          }
+          return;
+        }
+
+        // ==================== LAYOUT CARD VERTICAL CLÁSSICO ====================
         stage.innerHTML = `
           <div class="w-[340px] flex flex-col items-stretch">
             <div id="obs-live-roll-slot">${rollHtml}</div>
@@ -5424,13 +5510,13 @@
           modal.id = "modal-obs-portrait";
           modal.className = "fixed inset-0 bg-black/85 backdrop-blur-sm z-50 hidden items-center justify-center p-4";
           modal.innerHTML = `
-            <div class="bg-[#111114] border border-[#26262e] rounded-2xl max-w-3xl w-full p-6 flex flex-col max-h-[92vh] space-y-4 shadow-2xl">
+            <div class="bg-[#111114] border border-[#26262e] rounded-2xl max-w-3xl w-full p-6 flex flex-col max-h-[90vh] space-y-4 shadow-2xl">
               <div class="flex items-center justify-between border-b border-[#26262e] pb-3">
                 <div class="flex items-center gap-2.5">
                   <span class="text-xl">🎥</span>
                   <div>
-                    <h3 class="text-base font-bold text-white">Portrait Dinâmico para OBS Studio</h3>
-                    <p class="text-xs text-zinc-400">Overlay transparente com PV, PE, SAN, estados de dano e rolagens ao vivo</p>
+                    <h3 class="text-base font-bold text-white">OBS Studio — Portrait Reativo em Tempo Real</h3>
+                    <p class="text-xs text-zinc-400">Exibe avatar, PV, PE, Sanidade e rolagens com fundo 100% transparente na live</p>
                   </div>
                 </div>
                 <button type="button" id="btn-close-obs-modal" class="text-zinc-400 hover:text-white text-lg px-2">✕</button>
@@ -5442,7 +5528,7 @@
         }
       }
 
-      function buildObsUrl(agentId) {
+      function buildObsUrl(agentId, layout = "card") {
         const baseUrl = window.location.href.split("?")[0].split("#")[0];
         let sessionMeta = {};
         try {
@@ -5451,10 +5537,13 @@
 
         const params = new URLSearchParams();
         params.set("obs", "1");
+        if (layout && layout !== "card") params.set("layout", layout);
         if (agentId) params.set("agent", agentId);
         if (sessionMeta.roomCode) params.set("room", sessionMeta.roomCode);
         return `${baseUrl}?${params.toString()}`;
       }
+
+      let selectedObsLayout = "webcam";
 
       function renderObsConfigModal() {
         const container = document.getElementById("obs-modal-content");
@@ -5467,15 +5556,38 @@
         }
 
         const cfg = getObsSettingsMap()[ag.id] || {};
-        const obsUrl = buildObsUrl(ag.id);
+        const obsUrl = buildObsUrl(ag.id, selectedObsLayout);
+        const recSize = selectedObsLayout === "webcam" ? "Largura: 460 × Altura: 220" : "Largura: 400 × Altura: 520";
 
         container.innerHTML = `
           <!-- Link para o OBS Studio -->
-          <div class="bg-[#09090b] border border-sky-500/40 rounded-2xl p-4 space-y-2.5">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-sky-300 uppercase tracking-wider">1. Link para Fonte de Navegador (Browser Source) no OBS</span>
+          <div class="bg-[#09090b] border border-sky-500/40 rounded-2xl p-4 space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <span class="text-xs font-bold text-sky-300 uppercase tracking-wider">1. Escolha o Formato & Copie o Link do OBS</span>
               <span class="text-[11px] font-mono text-zinc-400">Agente: <strong class="text-white">${ag.name}</strong></span>
             </div>
+
+            <!-- Seletor de Layout -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+              <button type="button" data-obs-layout="webcam"
+                class="p-2.5 rounded-xl border text-left transition ${selectedObsLayout === "webcam" ? "border-sky-400 bg-sky-500/15 text-white" : "border-[#26262e] bg-[#111114] text-zinc-400 hover:text-zinc-200"}">
+                <div class="font-bold flex items-center justify-between">
+                  <span>📹 HUD Canto da Webcam</span>
+                  <span class="text-[10px] font-mono text-sky-300">460×220</span>
+                </div>
+                <p class="text-[11px] text-zinc-400 mt-0.5">Compacto horizontal para o canto inferior esquerdo da câmera.</p>
+              </button>
+
+              <button type="button" data-obs-layout="card"
+                class="p-2.5 rounded-xl border text-left transition ${selectedObsLayout === "card" ? "border-sky-400 bg-sky-500/15 text-white" : "border-[#26262e] bg-[#111114] text-zinc-400 hover:text-zinc-200"}">
+                <div class="font-bold flex items-center justify-between">
+                  <span>🃏 Portrait Vertical Completo</span>
+                  <span class="text-[10px] font-mono text-sky-300">400×520</span>
+                </div>
+                <p class="text-[11px] text-zinc-400 mt-0.5">Retrato grande vertical com arte em destaque e barras abaixo.</p>
+              </button>
+            </div>
+
             <div class="flex gap-2">
               <input type="text" id="obs-generated-url" readonly value="${obsUrl}"
                 class="flex-1 bg-[#111114] border border-[#26262e] rounded-xl px-3 py-2 text-xs font-mono text-zinc-200 outline-none" />
@@ -5487,7 +5599,7 @@
               </a>
             </div>
             <p class="text-[11px] text-zinc-400">
-              No OBS Studio: <strong>Fontes (+) → Navegador</strong> → Cole o link acima → Largura: <code class="text-zinc-200">400</code>, Altura: <code class="text-zinc-200">520</code>. O fundo já é 100% transparente!
+              No OBS Studio: <strong>Fontes (+) → Navegador</strong> → Cole o link acima → Dimensões recomendadas: <code class="text-sky-300 font-mono">${recSize}</code>.
             </p>
           </div>
 
@@ -5567,59 +5679,76 @@
       }
 
       document.addEventListener("click", (e) => {
+        const layoutBtn = e.target.closest("[data-obs-layout]");
+        if (layoutBtn) {
+          selectedObsLayout = layoutBtn.getAttribute("data-obs-layout");
+          renderObsConfigModal();
+          return;
+        }
+
         const btn = e.target.closest("button");
         if (!btn) return;
 
         if (btn.id === "btn-open-obs-modal") {
-          renderObsConfigModal();
           const modal = document.getElementById("modal-obs-portrait");
-          modal.classList.remove("hidden");
-          modal.classList.add("flex");
+          if (modal) {
+            modal.classList.remove("hidden");
+            modal.classList.add("flex");
+            renderObsConfigModal();
+          }
         } else if (btn.id === "btn-close-obs-modal") {
           const modal = document.getElementById("modal-obs-portrait");
-          modal.classList.add("hidden");
-          modal.classList.remove("flex");
+          if (modal) {
+            modal.classList.add("hidden");
+            modal.classList.remove("flex");
+          }
         } else if (btn.id === "btn-copy-obs-url") {
-          const inp = document.getElementById("obs-generated-url");
-          inp.select();
-          document.execCommand("copy");
-          btn.textContent = "✓ Copiado!";
-          setTimeout(() => { btn.textContent = "📋 Copiar Link OBS"; }, 2000);
+          const input = document.getElementById("obs-generated-url");
+          if (input) {
+            input.select();
+            document.execCommand("copy");
+            btn.textContent = "✓ Link Copiado!";
+            setTimeout(() => { btn.textContent = "📋 Copiar Link OBS"; }, 2000);
+          }
         } else if (btn.id === "btn-save-obs-cfg") {
           const ag = getActiveRosterAgent();
           if (!ag) return;
           saveObsSettingsForAgent(ag.id, {
-            avatarNormal: document.getElementById("obs-input-normal").value.trim(),
-            avatarHurt: document.getElementById("obs-input-hurt").value.trim(),
-            avatarInsane: document.getElementById("obs-input-insane").value.trim(),
-            avatarDying: document.getElementById("obs-input-dying").value.trim(),
-            showBars: document.getElementById("obs-chk-bars").checked,
-            showName: document.getElementById("obs-chk-name").checked,
-            showNex: document.getElementById("obs-chk-nex").checked
+            avatarNormal: document.getElementById("obs-input-normal")?.value.trim() || "",
+            avatarHurt: document.getElementById("obs-input-hurt")?.value.trim() || "",
+            avatarInsane: document.getElementById("obs-input-insane")?.value.trim() || "",
+            avatarDying: document.getElementById("obs-input-dying")?.value.trim() || "",
+            showBars: document.getElementById("obs-chk-bars")?.checked !== false,
+            showName: document.getElementById("obs-chk-name")?.checked !== false,
+            showNex: document.getElementById("obs-chk-nex")?.checked !== false
           });
-          btn.textContent = "✓ Atualizado no OBS!";
-          setTimeout(() => { btn.textContent = "Salvar & Atualizar OBS"; }, 1800);
+          btn.textContent = "✓ Salvo & Sincronizado!";
+          setTimeout(() => { btn.textContent = "Salvar & Atualizar OBS"; }, 2000);
         }
       });
 
       document.addEventListener("change", (e) => {
-        const fileInput = e.target;
-        if (fileInput && fileInput.dataset && fileInput.dataset.obsFile && fileInput.files[0]) {
-          const fieldKey = fileInput.dataset.obsFile;
-          const reader = new FileReader();
-          reader.onload = (ev) => {
-            const ag = getActiveRosterAgent();
-            if (!ag) return;
-            saveObsSettingsForAgent(ag.id, { [fieldKey]: ev.target.result });
-            renderObsConfigModal();
-          };
-          reader.readAsDataURL(fileInput.files[0]);
-        }
+        const fileInput = e.target.closest("input[data-obs-file]");
+        if (!fileInput || !fileInput.files?.[0]) return;
+        const fieldKey = fileInput.getAttribute("data-obs-file");
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const textInputId = {
+            avatarNormal: "obs-input-normal",
+            avatarHurt: "obs-input-hurt",
+            avatarInsane: "obs-input-insane",
+            avatarDying: "obs-input-dying"
+          }[fieldKey];
+          const textInput = document.getElementById(textInputId);
+          if (textInput) textInput.value = ev.target.result;
+        };
+        reader.readAsDataURL(fileInput.files[0]);
       });
 
-      function initObsControls() {
+      function bootObsConfigModule() {
         injectObsPortraitButtonAndModal();
         attachObsRollListener();
+        broadcastObsSnapshot();
         setInterval(() => {
           if (!document.getElementById("btn-open-obs-modal")) {
             injectObsPortraitButtonAndModal();
@@ -5628,9 +5757,9 @@
       }
 
       if (document.readyState === "loading") {
-        window.addEventListener("DOMContentLoaded", initObsControls);
+        window.addEventListener("DOMContentLoaded", bootObsConfigModule);
       } else {
-        initObsControls();
+        bootObsConfigModule();
       }
     }
   </script>
