@@ -6191,330 +6191,213 @@
                 if (result) {
                   const now = Date.now();
                   if (now - lastRollDispatchTs < 900) return;
-                  lastRollDispatchTs = now;
-                  const rollId = `${now}_${Math.random().toString(36).slice(2, 7)}`;
-                  broadcastObsSnapshot({ title, detail, result, isCrit, isFumble, rollId }, true);
-                  return;
-                }
-              }
-            }
-          }
-        });
-        obsRollWatcher.observe(toastBox, { childList: true });
+        lastRollDispatchTs = now;
+
+        const titleEl = logEl.querySelector('.text-\\[11px\\], .font-bold, .uppercase');
+        const valueEl = logEl.querySelector('.text-3xl, .text-2xl, .text-4xl, .font-black');
+        const detailEl = logEl.querySelector('.text-xs, .text-\\[10px\\], .text-zinc-400');
+
+        const title = titleEl ? titleEl.textContent.trim() : 'Rolagem';
+        const total = valueEl ? valueEl.textContent.trim() : '?';
+        const detail = detailEl ? detailEl.textContent.trim() : '';
+
+        // Detecta crítico ou falha crítica pelos textos/classes padrão da ficha
+        const logText = logEl.textContent.toLowerCase();
+        const isCrit = logText.includes('crítico') || logText.includes('desastre') || logEl.innerHTML.includes('emerald') || logEl.innerHTML.includes('red-500');
+
+        showObsRollBanner({ title, total, detail, isCrit });
+      });
+
+      observer.observe(logEl, { childList: true, subtree: true, characterData: true });
+    }
+
+    function showObsRollBanner({ title, total, detail, isCrit }) {
+      const banner = document.getElementById('obs-roll-banner');
+      if (!banner) return;
+
+      const titleNode = document.getElementById('obs-roll-title');
+      const totalNode = document.getElementById('obs-roll-total');
+      const detailNode = document.getElementById('obs-roll-detail');
+
+      if (titleNode) titleNode.textContent = title || 'Teste';
+      if (totalNode) {
+        totalNode.textContent = total || '-';
+        totalNode.style.color = isCrit ? '#fbbf24' : '#ffffff';
       }
+      if (detailNode) detailNode.textContent = detail || '';
 
-      function injectObsPortraitButtonAndModal() {
-        const topBarRight = document.querySelector("body > div:first-child .max-w-7xl > div:last-child");
-        if (topBarRight && !document.getElementById("btn-open-obs-modal")) {
-          const btn = document.createElement("button");
-          btn.id = "btn-open-obs-modal";
-          btn.type = "button";
-          btn.className = "px-2.5 py-1 rounded-md bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-sky-200 font-semibold transition flex items-center gap-1.5";
-          btn.innerHTML = `<span>🎥</span> <span class="hidden md:inline">OBS Portrait</span>`;
-          topBarRight.prepend(btn);
-        }
+      banner.classList.remove('opacity-0', 'translate-y-4', 'pointer-events-none');
+      banner.classList.add('opacity-100', 'translate-y-0');
 
-        if (!document.getElementById("modal-obs-portrait")) {
-          const modal = document.createElement("div");
-          modal.id = "modal-obs-portrait";
-          modal.className = "fixed inset-0 bg-black/85 backdrop-blur-sm z-50 hidden items-center justify-center p-4";
-          modal.innerHTML = `
-            <div class="bg-[#111114] border border-[#26262e] rounded-2xl max-w-3xl w-full p-6 flex flex-col max-h-[90vh] space-y-4 shadow-2xl">
-              <div class="flex items-center justify-between border-b border-[#26262e] pb-3">
-                <div class="flex items-center gap-2.5">
-                  <span class="text-xl">🎥</span>
-                  <div>
-                    <h3 class="text-base font-bold text-white">OBS Studio — Portrait & Skins (Tempo Real)</h3>
-                    <p id="obs-cloud-status-badge" class="text-[11px] font-mono text-zinc-400">${obsSyncStatusText}</p>
-                  </div>
-                </div>
-                <button type="button" id="btn-close-obs-modal" class="text-zinc-400 hover:text-white text-lg px-2">✕</button>
+      clearTimeout(obsRollBannerTimer);
+      obsRollBannerTimer = setTimeout(() => {
+        banner.classList.remove('opacity-100', 'translate-y-0');
+        banner.classList.add('opacity-0', 'translate-y-4', 'pointer-events-none');
+      }, 5500);
+    }
+
+    function injectObsToolbarButton() {
+      if (document.getElementById('btn-open-obs-modal')) return;
+
+      // Procura a barra superior de ações da ficha para inserir o botão do OBS
+      const headerActions = document.querySelector('header .flex.items-center.gap-2, header .flex.flex-wrap.items-center');
+      if (!headerActions) return;
+
+      const btn = document.createElement('button');
+      btn.id = 'btn-open-obs-modal';
+      btn.type = 'button';
+      btn.title = 'Configurar Retrato / Overlay para OBS Studio';
+      btn.className = 'px-2.5 py-1.5 rounded bg-purple-950/70 hover:bg-purple-900/90 border border-purple-500/40 text-purple-200 text-xs font-semibold flex items-center gap-1.5 transition-all';
+      btn.innerHTML = `<i data-lucide="tv" class="w-3.5 h-3.5 text-purple-400"></i><span>OBS Portrait</span>`;
+      btn.addEventListener('click', openObsSetupModal);
+
+      headerActions.appendChild(btn);
+      if (window.lucide && typeof window.lucide.createIcons === 'function') {
+        window.lucide.createIcons();
+      }
+    }
+
+    function openObsSetupModal() {
+      let modal = document.getElementById('obs-setup-modal');
+      if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'obs-setup-modal';
+        modal.className = 'fixed inset-0 z-[120] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4';
+        modal.innerHTML = `
+          <div class="bg-zinc-950 border border-zinc-800 rounded-lg max-w-lg w-full p-5 shadow-2xl text-zinc-100 space-y-4">
+            <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+              <div class="flex items-center gap-2">
+                <i data-lucide="tv" class="w-5 h-5 text-purple-400"></i>
+                <h3 class="font-bold text-base tracking-wide uppercase">OBS Studio — Stream Portrait</h3>
               </div>
-              <div id="obs-modal-content" class="overflow-y-auto flex-1 pr-1 space-y-4"></div>
-            </div>
-          `;
-          document.body.appendChild(modal);
-        }
-      }
-
-      function buildObsUrl(agentId, layout = "webcam", skin = "dossier") {
-        const baseUrl = window.location.href.split("?")[0].split("#")[0];
-        let sessionMeta = {};
-        try {
-          sessionMeta = JSON.parse(localStorage.getItem("op_multiplayer_session_v1") || "{}");
-        } catch (e) {}
-
-        const ag = getActiveRosterAgent();
-        const cfg = ag ? { ...(getObsSettingsMap()[ag.id] || {}), skin } : { skin };
-        const standalonePayload = ag ? encodeStandalonePayload(ag, cfg) : "";
-
-        const params = new URLSearchParams();
-        params.set("obs", "1");
-        params.set("layout", layout);
-        params.set("skin", skin);
-        if (agentId) params.set("agent", agentId);
-        if (sessionMeta.roomCode) params.set("room", sessionMeta.roomCode);
-        if (standalonePayload) params.set("d", standalonePayload);
-        return `${baseUrl}?${params.toString()}`;
-      }
-
-      let selectedObsLayout = "webcam";
-
-      function renderObsConfigModal() {
-        const container = document.getElementById("obs-modal-content");
-        if (!container) return;
-
-        const ag = getActiveRosterAgent();
-        if (!ag) {
-          container.innerHTML = `<p class="text-xs text-zinc-400">Selecione ou crie um agente primeiro.</p>`;
-          return;
-        }
-
-        const cfg = getObsSettingsMap()[ag.id] || {};
-        const selectedSkin = cfg.skin || "dossier";
-        const obsUrl = buildObsUrl(ag.id, selectedObsLayout, selectedSkin);
-        const recSize = selectedObsLayout === "webcam" ? "Largura: 540 × Altura: 250" : "Largura: 390 × Altura: 490";
-
-        const skinCardsHtml = Object.values(OBS_SKINS).map(sk => {
-          const isSelected = selectedSkin === sk.id;
-          return `
-            <button type="button" data-obs-skin="${sk.id}"
-              class="p-2.5 rounded-xl border text-left transition ${isSelected ? "border-purple-400 bg-purple-500/15 text-white shadow-sm" : "border-[#26262e] bg-[#111114] text-zinc-400 hover:text-zinc-200"}">
-              <div class="font-bold text-xs flex items-center justify-between">
-                <span>${sk.icon} ${sk.name}</span>
-                ${isSelected ? `<span class="text-[10px] font-mono text-purple-300">ATIVA</span>` : ""}
-              </div>
-              <p class="text-[11px] text-zinc-400 mt-0.5 leading-snug">${sk.desc}</p>
-            </button>
-          `;
-        }).join("");
-
-        container.innerHTML = `
-          <div class="bg-[#09090b] border border-purple-500/35 rounded-2xl p-4 space-y-2.5">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-purple-300 uppercase tracking-wider">1. Escolha a Skin Visual</span>
-              <span class="text-[11px] text-zinc-400">Troca em tempo real no OBS</span>
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              ${skinCardsHtml}
-            </div>
-          </div>
-
-          <div class="bg-[#09090b] border border-amber-500/35 rounded-2xl p-4 space-y-3">
-            <div class="flex flex-wrap items-center justify-between gap-2">
-              <span class="text-xs font-bold text-amber-300 uppercase tracking-wider">2. Formato & Link do OBS</span>
-              <span class="text-[11px] font-mono text-zinc-400">Agente: <strong class="text-emerald-400">${ag.name} (NEX ${ag.nex || 5}%)</strong></span>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-              <button type="button" data-obs-layout="webcam"
-                class="p-2.5 rounded-xl border text-left transition ${selectedObsLayout === "webcam" ? "border-amber-400 bg-amber-500/15 text-white" : "border-[#26262e] bg-[#111114] text-zinc-400 hover:text-zinc-200"}">
-                <div class="font-bold flex items-center justify-between">
-                  <span>↔ Horizontal (Webcam)</span>
-                  <span class="text-[10px] font-mono text-amber-300">540×250</span>
-                </div>
-                <p class="text-[11px] text-zinc-400 mt-0.5">Ideal para ficar sobre a borda inferior da webcam.</p>
-              </button>
-
-              <button type="button" data-obs-layout="card"
-                class="p-2.5 rounded-xl border text-left transition ${selectedObsLayout === "card" ? "border-amber-400 bg-amber-500/15 text-white" : "border-[#26262e] bg-[#111114] text-zinc-400 hover:text-zinc-200"}">
-                <div class="font-bold flex items-center justify-between">
-                  <span>↕ Vertical (Retrato)</span>
-                  <span class="text-[10px] font-mono text-amber-300">390×490</span>
-                </div>
-                <p class="text-[11px] text-zinc-400 mt-0.5">Card vertical com retrato grande em destaque.</p>
+              <button type="button" id="close-obs-modal" class="text-zinc-400 hover:text-white p-1">
+                <i data-lucide="x" class="w-5 h-5"></i>
               </button>
             </div>
 
-            <div class="flex gap-2">
-              <input type="text" id="obs-generated-url" readonly value="${obsUrl}"
-                class="flex-1 bg-[#111114] border border-[#26262e] rounded-xl px-3 py-2 text-xs font-mono text-zinc-200 outline-none" />
-              <button type="button" id="btn-copy-obs-url" class="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold transition shrink-0">
-                📋 Copiar Link OBS
-              </button>
-              <a href="${obsUrl}" target="_blank" class="px-3 py-2 rounded-xl bg-[#18181d] hover:bg-zinc-800 border border-[#26262e] text-xs text-zinc-200 font-medium transition shrink-0">
-                ↗ Testar
-              </a>
-            </div>
-            <p class="text-[11px] text-zinc-400">
-              Dimensões no OBS Studio: <code class="text-amber-300 font-mono">${recSize}</code>.
+            <p class="text-xs text-zinc-400 leading-relaxed">
+              Use o link abaixo como <strong>Navegador (Browser Source)</strong> no OBS Studio com fundo transparente. O layout prioriza a foto quadrada sem bordas arredondadas, nome do agente e os status principais (PV, PE, SAN) no canto inferior esquerdo.
             </p>
-          </div>
 
-          <div class="bg-[#09090b] border border-[#26262e] rounded-2xl p-4 space-y-3">
-            <span class="block text-xs font-bold text-white uppercase tracking-wider">3. Fotografia do Agente (URL ou Upload)</span>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-              <div>
-                <label class="block text-zinc-400 mb-1">Foto Padrão (Normal)</label>
-                <div class="flex gap-1.5">
-                  <input type="text" id="obs-input-normal" value="${cfg.avatarNormal || ""}" placeholder="https://... ou clique na pasta →"
-                    class="flex-1 bg-[#111114] border border-[#26262e] rounded-xl px-3 py-2 text-white outline-none" />
-                  <label class="px-2.5 py-2 rounded-xl bg-[#18181d] hover:bg-zinc-800 border border-[#26262e] text-zinc-300 cursor-pointer shrink-0">
-                    📁 <input type="file" accept="image/*" data-obs-file="avatarNormal" class="hidden" />
-                  </label>
-                </div>
-              </div>
-
-              <div>
-                <label class="block text-rose-300 mb-1">Foto Machucado (≤ 50% PV) <span class="text-zinc-500">(opcional)</span></label>
-                <div class="flex gap-1.5">
-                  <input type="text" id="obs-input-hurt" value="${cfg.avatarHurt || ""}" placeholder="Opcional (filtro automático se vazio)"
-                    class="flex-1 bg-[#111114] border border-[#26262e] rounded-xl px-3 py-2 text-white outline-none" />
-                  <label class="px-2.5 py-2 rounded-xl bg-[#18181d] hover:bg-zinc-800 border border-[#26262e] text-zinc-300 cursor-pointer shrink-0">
-                    📁 <input type="file" accept="image/*" data-obs-file="avatarHurt" class="hidden" />
-                  </label>
-                </div>
-              </div>
-
-              <div>
-                <label class="block text-sky-300 mb-1">Foto Perturbado / Enlouquecendo <span class="text-zinc-500">(opcional)</span></label>
-                <div class="flex gap-1.5">
-                  <input type="text" id="obs-input-insane" value="${cfg.avatarInsane || ""}" placeholder="Opcional (filtro automático se vazio)"
-                    class="flex-1 bg-[#111114] border border-[#26262e] rounded-xl px-3 py-2 text-white outline-none" />
-                  <label class="px-2.5 py-2 rounded-xl bg-[#18181d] hover:bg-zinc-800 border border-[#26262e] text-zinc-300 cursor-pointer shrink-0">
-                    📁 <input type="file" accept="image/*" data-obs-file="avatarInsane" class="hidden" />
-                  </label>
-                </div>
-              </div>
-
-              <div>
-                <label class="block text-zinc-400 mb-1">Foto Morrendo (0 PV) <span class="text-zinc-500">(opcional)</span></label>
-                <div class="flex gap-1.5">
-                  <input type="text" id="obs-input-dying" value="${cfg.avatarDying || ""}" placeholder="Opcional (P&B automático se vazio)"
-                    class="flex-1 bg-[#111114] border border-[#26262e] rounded-xl px-3 py-2 text-white outline-none" />
-                  <label class="px-2.5 py-2 rounded-xl bg-[#18181d] hover:bg-zinc-800 border border-[#26262e] text-zinc-300 cursor-pointer shrink-0">
-                    📁 <input type="file" accept="image/*" data-obs-file="avatarDying" class="hidden" />
-                  </label>
-                </div>
+            <div class="space-y-2">
+              <label class="block text-[11px] font-bold uppercase tracking-wider text-zinc-400">URL do Retrato (Agente Atual)</label>
+              <div class="flex gap-2">
+                <input id="obs-generated-url" type="text" readonly class="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-xs text-purple-300 font-mono select-all" />
+                <button type="button" id="copy-obs-url-btn" class="px-3 py-2 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded shrink-0 transition">
+                  Copiar
+                </button>
               </div>
             </div>
 
-            <div class="flex flex-wrap items-center gap-5 pt-2 border-t border-[#26262e] text-xs text-zinc-300">
-              <label class="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" id="obs-chk-bars" ${cfg.showBars !== false ? "checked" : ""} />
-                <span>Mostrar Barras & Números (PV / PE / SAN)</span>
+            <div class="grid grid-cols-2 gap-3 pt-1">
+              <label class="flex items-center gap-2 text-xs text-zinc-300 cursor-pointer bg-zinc-900/70 p-2.5 rounded border border-zinc-800">
+                <input type="checkbox" id="obs-opt-hide-bars" class="accent-purple-500" />
+                <span>Ocultar barras (só números)</span>
               </label>
-              <label class="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" id="obs-chk-name" ${cfg.showName !== false ? "checked" : ""} />
-                <span>Mostrar Nome do Personagem</span>
-              </label>
-              <label class="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" id="obs-chk-nex" ${cfg.showNex !== false ? "checked" : ""} />
-                <span>Mostrar NEX na Foto</span>
+              <label class="flex items-center gap-2 text-xs text-zinc-300 cursor-pointer bg-zinc-900/70 p-2.5 rounded border border-zinc-800">
+                <input type="checkbox" id="obs-opt-chroma" class="accent-purple-500" />
+                <span>Fundo Chroma Key (#00FF00)</span>
               </label>
             </div>
 
-            <div class="flex justify-end pt-1">
-              <button type="button" id="btn-save-obs-cfg" class="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold transition">
-                Salvar & Atualizar Link
+            <div class="bg-zinc-900/60 border border-zinc-800/80 rounded p-3 text-[11px] text-zinc-400 space-y-1">
+              <div><strong class="text-zinc-200">Dimensões recomendadas no OBS:</strong> Largura <code class="text-purple-300">650</code> × Altura <code class="text-purple-300">300</code></div>
+              <div><strong class="text-zinc-200">Sincronização ao vivo:</strong> Se estiver conectado a uma Sala Multiplayer, o retrato atualiza automaticamente mesmo em outro navegador/OBS.</div>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2">
+              <a id="obs-preview-link" href="#" target="_blank" rel="noopener" class="px-3.5 py-2 rounded bg-zinc-800 hover:bg-zinc-700 text-xs font-semibold text-zinc-200">
+                Abrir Preview
+              </a>
+              <button type="button" id="done-obs-modal" class="px-4 py-2 rounded bg-purple-600 hover:bg-purple-500 text-xs font-bold text-white">
+                Concluir
               </button>
             </div>
           </div>
         `;
-      }
+        document.body.appendChild(modal);
 
-      document.addEventListener("click", (e) => {
-        const skinBtn = e.target.closest("[data-obs-skin]");
-        if (skinBtn) {
-          const ag = getActiveRosterAgent();
-          const newSkin = skinBtn.getAttribute("data-obs-skin");
-          if (ag && newSkin) {
-            saveObsSettingsForAgent(ag.id, { skin: newSkin });
-            renderObsConfigModal();
-          }
-          return;
-        }
+        const updateUrl = () => {
+          const url = new URL(window.location.href);
+          url.searchParams.set('obs', '1');
+          const hideBars = document.getElementById('obs-opt-hide-bars')?.checked;
+          const chroma = document.getElementById('obs-opt-chroma')?.checked;
+          if (hideBars) url.searchParams.set('nobars', '1');
+          else url.searchParams.delete('nobars');
+          if (chroma) url.searchParams.set('chroma', '1');
+          else url.searchParams.delete('chroma');
 
-        const layoutBtn = e.target.closest("[data-obs-layout]");
-        if (layoutBtn) {
-          selectedObsLayout = layoutBtn.getAttribute("data-obs-layout");
-          renderObsConfigModal();
-          return;
-        }
+          const activeId = window.currentAgentId || localStorage.getItem('ordem_active_agent_id');
+          if (activeId) url.searchParams.set('agent', activeId);
 
-        const btn = e.target.closest("button");
-        if (!btn) return;
-
-        if (btn.id === "btn-open-obs-modal") {
-          const modal = document.getElementById("modal-obs-portrait");
-          if (modal) {
-            modal.classList.remove("hidden");
-            modal.classList.add("flex");
-            renderObsConfigModal();
-            broadcastObsSnapshot(null, true);
-          }
-        } else if (btn.id === "btn-close-obs-modal") {
-          const modal = document.getElementById("modal-obs-portrait");
-          if (modal) {
-            modal.classList.add("hidden");
-            modal.classList.remove("flex");
-          }
-        } else if (btn.id === "btn-copy-obs-url") {
-          const input = document.getElementById("obs-generated-url");
-          if (input) {
-            input.select();
-            document.execCommand("copy");
-            btn.textContent = "✓ Link Copiado!";
-            setTimeout(() => { btn.textContent = "📋 Copiar Link OBS"; }, 2000);
-          }
-        } else if (btn.id === "btn-save-obs-cfg") {
-          const ag = getActiveRosterAgent();
-          if (!ag) return;
-          saveObsSettingsForAgent(ag.id, {
-            avatarNormal: document.getElementById("obs-input-normal")?.value.trim() || "",
-            avatarHurt: document.getElementById("obs-input-hurt")?.value.trim() || "",
-            avatarInsane: document.getElementById("obs-input-insane")?.value.trim() || "",
-            avatarDying: document.getElementById("obs-input-dying")?.value.trim() || "",
-            showBars: document.getElementById("obs-chk-bars")?.checked !== false,
-            showName: document.getElementById("obs-chk-name")?.checked !== false,
-            showNex: document.getElementById("obs-chk-nex")?.checked !== false
-          });
-          renderObsConfigModal();
-          const savedBtn = document.getElementById("btn-save-obs-cfg");
-          if (savedBtn) {
-            savedBtn.textContent = "✓ Salvo & Link Atualizado!";
-            setTimeout(() => { savedBtn.textContent = "Salvar & Atualizar Link"; }, 2000);
-          }
-        }
-      });
-
-      document.addEventListener("change", (e) => {
-        const fileInput = e.target.closest("input[data-obs-file]");
-        if (!fileInput || !fileInput.files?.[0]) return;
-        const fieldKey = fileInput.getAttribute("data-obs-file");
-        const reader = new FileReader();
-        reader.onload = async (ev) => {
-          const compressed = await compressImageDataUrl(ev.target.result, 280, 0.72);
-          const textInputId = {
-            avatarNormal: "obs-input-normal",
-            avatarHurt: "obs-input-hurt",
-            avatarInsane: "obs-input-insane",
-            avatarDying: "obs-input-dying"
-          }[fieldKey];
-          const textInput = document.getElementById(textInputId);
-          if (textInput) textInput.value = compressed;
+          const finalHref = url.toString();
+          const input = document.getElementById('obs-generated-url');
+          const preview = document.getElementById('obs-preview-link');
+          if (input) input.value = finalHref;
+          if (preview) preview.href = finalHref;
         };
-        reader.readAsDataURL(fileInput.files[0]);
-      });
 
-      function bootObsConfigModule() {
-        injectObsPortraitButtonAndModal();
-        attachObsRollListener();
-        broadcastObsSnapshot(null, true);
-        setInterval(() => {
-          if (!document.getElementById("btn-open-obs-modal")) {
-            injectObsPortraitButtonAndModal();
+        modal.querySelector('#obs-opt-hide-bars')?.addEventListener('change', updateUrl);
+        modal.querySelector('#obs-opt-chroma')?.addEventListener('change', updateUrl);
+
+        modal.querySelector('#copy-obs-url-btn')?.addEventListener('click', () => {
+          const input = document.getElementById('obs-generated-url');
+          if (!input) return;
+          navigator.clipboard?.writeText(input.value);
+          const btn = document.getElementById('copy-obs-url-btn');
+          if (btn) {
+            btn.textContent = 'Copiado!';
+            setTimeout(() => { btn.textContent = 'Copiar'; }, 1800);
           }
-        }, 1500);
+        });
+
+        const closeModal = () => modal.classList.add('hidden');
+        modal.querySelector('#close-obs-modal')?.addEventListener('click', closeModal);
+        modal.querySelector('#done-obs-modal')?.addEventListener('click', closeModal);
+        modal.addEventListener('click', (e) => {
+          if (e.target === modal) closeModal();
+        });
       }
 
-      if (document.readyState === "loading") {
-        window.addEventListener("DOMContentLoaded", bootObsConfigModule);
-      } else {
-        bootObsConfigModule();
+      // Atualiza URL sempre que abrir
+      const url = new URL(window.location.href);
+      url.searchParams.set('obs', '1');
+      const activeId = window.currentAgentId || localStorage.getItem('ordem_active_agent_id');
+      if (activeId) url.searchParams.set('agent', activeId);
+      const input = document.getElementById('obs-generated-url');
+      const preview = document.getElementById('obs-preview-link');
+      if (input) input.value = url.toString();
+      if (preview) preview.href = url.toString();
+
+      modal.classList.remove('hidden');
+      if (window.lucide && typeof window.lucide.createIcons === 'function') {
+        window.lucide.createIcons();
       }
     }
+
+    // Inicializa modo OBS Portrait ou injeta o botão na barra da ficha
+    function bootstrapObsPortrait() {
+      const params = new URLSearchParams(window.location.search);
+      const isObsMode = params.get('obs') === '1' || params.get('portrait') === '1';
+
+      if (isObsMode) {
+        if (typeof initObsPortraitMode === 'function') {
+          initObsPortraitMode(params);
+        }
+        attachObsRollListener();
+      } else {
+        injectObsToolbarButton();
+        // Garante injeção caso o header renderize assincronamente
+        setTimeout(injectObsToolbarButton, 600);
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', bootstrapObsPortrait);
+    } else {
+      bootstrapObsPortrait();
+    }
+  })();
   </script>
 </body>
 </html>
