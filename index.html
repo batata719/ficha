@@ -5050,6 +5050,7 @@
 
   <script type="module">
     import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import {
       getFirestore,
       doc,
@@ -5079,10 +5080,22 @@
       Medo: { ink: "#1e3a8a", barPv: "#881337", barPe: "#92400e", barSan: "#1e3a8a", stamp: "#1e3a8a" }
     };
 
-    function getObsFirestore() {
-      const app = getApps().length ? getApps()[0] : initializeApp(OBS_FIRE_CONFIG);
-      return getFirestore(app);
-    }
+    const obsApp = getApps().length ? getApps()[0] : initializeApp(OBS_FIRE_CONFIG);
+    const obsAuth = getAuth(obsApp);
+    const obsDb = getFirestore(obsApp);
+
+    // Garante autenticação anônima ativa antes de ler/gravar no Firestore (corrige bloqueio de permissão no OBS)
+    let authReadyPromise = new Promise((resolve) => {
+      onAuthStateChanged(obsAuth, (user) => {
+        if (user) {
+          resolve(user);
+        } else {
+          signInAnonymously(obsAuth)
+            .then((cred) => resolve(cred.user))
+            .catch(() => resolve(null));
+        }
+      });
+    });
 
     function getObsSettingsMap() {
       try {
@@ -5144,8 +5157,7 @@
       return { maxPv, maxPe, maxSan };
     }
 
-    // Redimensiona imagens enviadas do computador para caberem com folga na nuvem e no OBS
-    function compressImageDataUrl(dataUrl, maxSide = 360, quality = 0.82) {
+    function compressImageDataUrl(dataUrl, maxSide = 340, quality = 0.8) {
       return new Promise((resolve) => {
         if (!dataUrl || !dataUrl.startsWith("data:image")) return resolve(dataUrl);
         const img = new Image();
@@ -5236,7 +5248,7 @@
     async function pushObsCloudStream(ag, cfg, rollEvent = null) {
       if (!ag || !ag.id) return;
       try {
-        const obsDb = getObsFirestore();
+        await authReadyPromise;
         const cleanCfg = { ...cfg };
         for (const k of ["avatarNormal", "avatarHurt", "avatarInsane", "avatarDying"]) {
           if (cleanCfg[k] && cleanCfg[k].startsWith("data:")) {
@@ -5270,7 +5282,7 @@
         await setDoc(doc(obsDb, "obs_overlays", ag.id), payload, { merge: true });
         await setDoc(doc(obsDb, "obs_overlays", "latest_active_agent"), payload, { merge: true });
       } catch (err) {
-        console.warn("OBS Cloud sync:", err);
+        console.warn("OBS Cloud sync error:", err);
       }
     }
 
@@ -5293,7 +5305,7 @@
       } else {
         obsCloudSyncTimer = setTimeout(() => {
           pushObsCloudStream(ag, cfg, rollEvent);
-        }, rollEvent ? 50 : 250);
+        }, rollEvent ? 30 : 120);
       }
     }
 
@@ -5576,7 +5588,7 @@
             : (roster.agents.find(a => a.id === roster.activeId) || roster.agents[0]);
           if (found) {
             currentObsAgent = found;
-            currentObsCfg = { ...(getObsSettingsMap()[found.id] || {}), ...currentObsCfg };
+            currentObsCfg = { ...currentObsCfg, ...(getObsSettingsMap()[found.id] || {}) };
             renderObsOverlay();
             return true;
           }
@@ -5601,14 +5613,15 @@
         }
       });
 
-      // Busca imediata no Firestore (resolve quando o OBS tem localStorage vazio ou foto enviada do PC)
-      async function bootstrapObsFromCloud() {
+      // Conecta ao Firestore APÓS signInAnonymously concluir para garantir leitura em tempo real sem bloqueio
+      async function bootstrapObsRealtime() {
         syncFromLocalStorage();
         if (currentObsAgent) renderObsOverlay();
 
+        await authReadyPromise;
+
+        const docIdToWatch = targetAgentId || "latest_active_agent";
         try {
-          const obsDb = getObsFirestore();
-          const docIdToWatch = targetAgentId || "latest_active_agent";
           const snap = await getDoc(doc(obsDb, "obs_overlays", docIdToWatch));
           if (snap.exists()) {
             const data = snap.data();
@@ -5640,36 +5653,28 @@
             });
           }
         } catch (err) {
-          if (!currentObsAgent) {
-            currentObsAgent = {
-              id: "fallback",
-              name: "Agente",
-              nex: 5,
-              affinity: "Nenhuma",
-              currentPv: 20,
-              _maxPv: 20,
-              currentPe: 4,
-              _maxPe: 4,
-              currentSan: 15,
-              _maxSan: 15
-            };
-            renderObsOverlay();
-          }
+          console.warn("OBS Realtime listener fallback:", err);
         }
       }
 
-      bootstrapObsFromCloud();
+      bootstrapObsRealtime();
     }
 
-    // ==================== 2. MODO NORMAL DA FICHA: PAINEL DE CONFIGURAÇÃO DO OBS ====================
+    // ==================== 2. MODO NORMAL DA FICHA: ENVIO EM TEMPO REAL ====================
     if (!isObsMode) {
-      const prevSetItem = localStorage.setItem.bind(localStorage);
-      localStorage.setItem = function (key, value) {
-        prevSetItem(key, value);
-        if (key === "op_agents_roster_v1") {
-          broadcastObsSnapshot();
+      let lastRosterJson = localStorage.getItem("op_agents_roster_v1") || "";
+      let lastCfgJson = localStorage.getItem(OBS_CFG_KEY) || "";
+
+      // Detecta QUALQUER alteração feita na ficha (PV, PE, SAN, NEX, troca de agente, etc.)
+      setInterval(() => {
+        const curRoster = localStorage.getItem("op_agents_roster_v1") || "";
+        const curCfg = localStorage.getItem(OBS_CFG_KEY) || "";
+        if (curRoster !== lastRosterJson || curCfg !== lastCfgJson) {
+          lastRosterJson = curRoster;
+          lastCfgJson = curCfg;
+          broadcastObsSnapshot(null, true);
         }
-      };
+      }, 450);
 
       function attachObsRollListener() {
         const toastBox = document.getElementById("toast-container");
@@ -5714,8 +5719,8 @@
                 <div class="flex items-center gap-2.5">
                   <span class="text-xl">🎥</span>
                   <div>
-                    <h3 class="text-base font-bold text-white">OBS Studio — Portrait Estilo Dossiê (Autônomo)</h3>
-                    <p class="text-xs text-zinc-400">Sincronizado com o seu agente ativo sem precisar manter abas abertas</p>
+                    <h3 class="text-base font-bold text-white">OBS Studio — Portrait Estilo Dossiê (Tempo Real)</h3>
+                    <p class="text-xs text-zinc-400">Atualiza PV, PE, SAN, status e rolagens ao vivo no OBS</p>
                   </div>
                 </div>
                 <button type="button" id="btn-close-obs-modal" class="text-zinc-400 hover:text-white text-lg px-2">✕</button>
@@ -5759,7 +5764,6 @@
           return;
         }
 
-        // Garante envio imediato do agente atual para a nuvem sempre que abrir o painel
         broadcastObsSnapshot(null, true);
 
         const cfg = getObsSettingsMap()[ag.id] || {};
@@ -5770,7 +5774,7 @@
           <div class="bg-[#09090b] border border-amber-500/35 rounded-2xl p-4 space-y-3">
             <div class="flex flex-wrap items-center justify-between gap-2">
               <span class="text-xs font-bold text-amber-300 uppercase tracking-wider">1. Formato & Link do OBS</span>
-              <span class="text-[11px] font-mono text-zinc-400">Agente vinculado: <strong class="text-emerald-400">${ag.name} (NEX ${ag.nex || 5}%)</strong></span>
+              <span class="text-[11px] font-mono text-zinc-400">Agente: <strong class="text-emerald-400">${ag.name} (NEX ${ag.nex || 5}%)</strong></span>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
@@ -5805,7 +5809,6 @@
             </div>
             <p class="text-[11px] text-zinc-400">
               No OBS Studio: <strong>Fontes (+) → Navegador</strong> → Cole o link acima → Dimensões: <code class="text-amber-300 font-mono">${recSize}</code>.
-              <br><span class="text-emerald-400">✓ Vinculado a ${ag.name}:</span> Se você alterar a foto abaixo, clique em <strong>Salvar & Atualizar Link</strong> e copie o novo link para o OBS.
             </p>
           </div>
 
