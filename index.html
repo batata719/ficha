@@ -5053,6 +5053,7 @@
     import {
       getFirestore,
       doc,
+      getDoc,
       setDoc,
       onSnapshot
     } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
@@ -5069,7 +5070,6 @@
     const OBS_CFG_KEY = "op_obs_portrait_settings_v1";
     const obsChannel = typeof BroadcastChannel !== "undefined" ? new BroadcastChannel("ordo_obs_portrait_bus") : null;
 
-    // Paleta orgânica de tinta / carimbo por afinidade
     const ELEMENT_INK_PALETTE = {
       Nenhuma: { ink: "#2c2520", barPv: "#991b1b", barPe: "#b45309", barSan: "#1e40af", stamp: "#3f362f" },
       Sangue: { ink: "#7f1d1d", barPv: "#991b1b", barPe: "#9a3412", barSan: "#1e3a8a", stamp: "#991b1b" },
@@ -5096,7 +5096,7 @@
       const map = getObsSettingsMap();
       map[agentId] = { ...(map[agentId] || {}), ...cfg };
       localStorage.setItem(OBS_CFG_KEY, JSON.stringify(map));
-      broadcastObsSnapshot();
+      broadcastObsSnapshot(null, true);
     }
 
     function getActiveRosterAgent() {
@@ -5104,6 +5104,7 @@
         const raw = localStorage.getItem("op_agents_roster_v1");
         if (!raw) return null;
         const roster = JSON.parse(raw);
+        if (!roster || !Array.isArray(roster.agents) || roster.agents.length === 0) return null;
         return roster.agents.find(a => a.id === roster.activeId) || roster.agents[0] || null;
       } catch (e) {
         return null;
@@ -5143,7 +5144,27 @@
       return { maxPv, maxPe, maxSan };
     }
 
-    // Codifica e decodifica snapshot compacto na URL para o OBS funcionar 100% sozinho sem aba aberta
+    // Redimensiona imagens enviadas do computador para caberem com folga na nuvem e no OBS
+    function compressImageDataUrl(dataUrl, maxSide = 360, quality = 0.82) {
+      return new Promise((resolve) => {
+        if (!dataUrl || !dataUrl.startsWith("data:image")) return resolve(dataUrl);
+        const img = new Image();
+        img.onload = () => {
+          const ratio = Math.min(1, maxSide / Math.max(img.width, img.height));
+          const w = Math.round(img.width * ratio);
+          const h = Math.round(img.height * ratio);
+          const canvas = document.createElement("canvas");
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL("image/jpeg", quality));
+        };
+        img.onerror = () => resolve(dataUrl);
+        img.src = dataUrl;
+      });
+    }
+
     function encodeStandalonePayload(ag, cfg) {
       try {
         const vitals = computeObsAgentVitals(ag);
@@ -5184,7 +5205,7 @@
         return {
           agent: {
             id: d.id || "standalone_agent",
-            name: d.n || "Agente",
+            name: d.n || "",
             charClass: d.c || "",
             path: d.p || "",
             nex: d.x || 5,
@@ -5217,13 +5238,13 @@
       try {
         const obsDb = getObsFirestore();
         const cleanCfg = { ...cfg };
-        ["avatarNormal", "avatarHurt", "avatarInsane", "avatarDying"].forEach(k => {
-          if (cleanCfg[k] && cleanCfg[k].startsWith("data:") && cleanCfg[k].length > 350000) {
-            cleanCfg[k] = "";
+        for (const k of ["avatarNormal", "avatarHurt", "avatarInsane", "avatarDying"]) {
+          if (cleanCfg[k] && cleanCfg[k].startsWith("data:")) {
+            cleanCfg[k] = await compressImageDataUrl(cleanCfg[k], 340, 0.8);
           }
-        });
+        }
 
-        await setDoc(doc(obsDb, "obs_overlays", ag.id), {
+        const payload = {
           agent: {
             id: ag.id,
             name: ag.name || "Agente",
@@ -5244,13 +5265,16 @@
           obsCfg: cleanCfg,
           rollEvent: rollEvent ? { ...rollEvent, rollId: Date.now() } : null,
           updatedAt: Date.now()
-        }, { merge: true });
+        };
+
+        await setDoc(doc(obsDb, "obs_overlays", ag.id), payload, { merge: true });
+        await setDoc(doc(obsDb, "obs_overlays", "latest_active_agent"), payload, { merge: true });
       } catch (err) {
-        // Silencioso caso offline
+        console.warn("OBS Cloud sync:", err);
       }
     }
 
-    function broadcastObsSnapshot(rollEvent = null) {
+    function broadcastObsSnapshot(rollEvent = null, immediate = false) {
       const ag = getActiveRosterAgent();
       if (!ag) return;
       const cfg = getObsSettingsMap()[ag.id] || {};
@@ -5264,12 +5288,16 @@
       if (obsChannel) obsChannel.postMessage(payload);
 
       clearTimeout(obsCloudSyncTimer);
-      obsCloudSyncTimer = setTimeout(() => {
+      if (immediate) {
         pushObsCloudStream(ag, cfg, rollEvent);
-      }, rollEvent ? 50 : 300);
+      } else {
+        obsCloudSyncTimer = setTimeout(() => {
+          pushObsCloudStream(ag, cfg, rollEvent);
+        }, rollEvent ? 50 : 250);
+      }
     }
 
-    // ==================== 1. MODO OVERLAY TRANSPARENTE (?obs=1) — TOTALMENTE AUTÔNOMO ====================
+    // ==================== 1. MODO OVERLAY TRANSPARENTE (?obs=1) ====================
     const urlParams = new URLSearchParams(window.location.search);
     const isObsMode = urlParams.get("obs") === "1";
 
@@ -5290,25 +5318,13 @@
         : "w-screen h-screen flex items-end justify-center p-5 select-none relative";
       document.body.appendChild(stage);
 
-      // Inicializa imediatamente com os dados embutidos na URL ou padrão local (nunca trava esperando aba aberta)
-      let currentObsAgent = embeddedData?.agent || {
-        id: targetAgentId || "local_agent",
-        name: "Agente da Ordem",
-        charClass: "Investigador",
-        nex: 5,
-        affinity: "Nenhuma",
-        currentPv: 20,
-        _maxPv: 20,
-        currentPe: 4,
-        _maxPe: 4,
-        currentSan: 15,
-        _maxSan: 15
-      };
+      let currentObsAgent = embeddedData?.agent?.name ? embeddedData.agent : null;
       let currentObsCfg = embeddedData?.obsCfg || {};
       let lastRollTimeout = null;
       let lastSeenRollId = null;
 
       function renderObsOverlay(rollEvent = null) {
+        if (!currentObsAgent) return;
         const ag = currentObsAgent;
         const cfg = currentObsCfg || {};
         const vitals = computeObsAgentVitals(ag);
@@ -5371,7 +5387,6 @@
           `
           : existingRoll;
 
-        // ==================== LAYOUT 1: FICHA DE CAMPO / WEBCAM (ESTÉTICA HUMANA & ANALÓGICA) ====================
         if (layoutMode === "webcam") {
           const photoHtml = chosenUrl
             ? `<img src="${chosenUrl}" alt="${ag.name}" class="w-full h-full object-cover object-top transition-all duration-300 ${autoFilterClass}" />`
@@ -5384,11 +5399,9 @@
               <div id="obs-live-roll-slot">${rollHtml}</div>
 
               <div class="relative flex items-center gap-4 p-3.5 pt-4 rounded-sm obs-paper-card">
-                <!-- Fita adesiva decorativa no topo -->
                 <div class="obs-tape-strip absolute -top-2.5 left-10 w-20 h-4 -rotate-2"></div>
                 <div class="obs-tape-strip absolute -top-2 right-12 w-16 h-4 rotate-1"></div>
 
-                <!-- Fotografia Polaroid do Agente -->
                 <div class="obs-polaroid-frame w-28 h-32 shrink-0 relative">
                   <div class="w-full h-full overflow-hidden bg-[#d8cebe] border border-[#c2b59f]">
                     ${photoHtml}
@@ -5399,7 +5412,6 @@
                     </span>` : ""}
                 </div>
 
-                <!-- Dados Manuscritos / Datilografados -->
                 <div class="flex-1 min-w-0 flex flex-col justify-between gap-2.5">
                   <div class="flex items-start justify-between gap-2 border-b border-dashed border-[#bfb29e] pb-1.5">
                     <div class="min-w-0">
@@ -5417,7 +5429,6 @@
 
                   ${showBars ? `
                     <div class="space-y-2 obs-font-typewriter">
-                      <!-- PV -->
                       <div>
                         <div class="flex items-baseline justify-between text-xs mb-0.5">
                           <span class="font-bold text-[#7f1d1d] tracking-wider">VITALIDADE (PV)</span>
@@ -5430,7 +5441,6 @@
                         </div>
                       </div>
 
-                      <!-- PE & SAN -->
                       <div class="grid grid-cols-2 gap-3">
                         <div>
                           <div class="flex items-baseline justify-between text-xs mb-0.5">
@@ -5473,7 +5483,6 @@
           return;
         }
 
-        // ==================== LAYOUT 2: PRONTUÁRIO VERTICAL (RETRATO IMPRESSO) ====================
         const cardPhoto = chosenUrl
           ? `<img src="${chosenUrl}" alt="${ag.name}" class="w-full h-full object-cover object-top transition-all duration-300 ${autoFilterClass}" />`
           : `<div class="w-full h-full flex items-center justify-center obs-font-stamp text-5xl text-[#3b3129] bg-[#e5dccb] ${autoFilterClass}">
@@ -5487,7 +5496,6 @@
             <div class="relative p-4 pt-5 rounded-sm obs-paper-card space-y-3">
               <div class="obs-tape-strip absolute -top-2.5 left-1/2 -translate-x-1/2 w-24 h-4 -rotate-1"></div>
 
-              <!-- Fotografia -->
               <div class="bg-[#faf7f2] p-2 pb-3 border border-[#d6cbb9] shadow-md relative">
                 <div class="w-full h-[270px] overflow-hidden bg-[#d8cebe] border border-[#c2b59f]">
                   ${cardPhoto}
@@ -5510,7 +5518,6 @@
                 </div>
               </div>
 
-              <!-- Marcadores de Status -->
               ${showBars ? `
                 <div class="space-y-2 obs-font-typewriter pt-0.5">
                   <div>
@@ -5562,17 +5569,19 @@
       function syncFromLocalStorage() {
         try {
           const raw = localStorage.getItem("op_agents_roster_v1");
-          if (!raw) return;
+          if (!raw) return false;
           const roster = JSON.parse(raw);
           const found = targetAgentId
             ? roster.agents.find(a => a.id === targetAgentId)
             : (roster.agents.find(a => a.id === roster.activeId) || roster.agents[0]);
           if (found) {
             currentObsAgent = found;
-            currentObsCfg = { ...currentObsCfg, ...(getObsSettingsMap()[found.id] || {}) };
+            currentObsCfg = { ...(getObsSettingsMap()[found.id] || {}), ...currentObsCfg };
             renderObsOverlay();
+            return true;
           }
         } catch (e) {}
+        return false;
       }
 
       if (obsChannel) {
@@ -5592,13 +5601,25 @@
         }
       });
 
-      // Escuta atualizações ao vivo do Firestore se a ficha estiver aberta em outro dispositivo/aba
-      try {
-        const obsDb = getObsFirestore();
-        if (targetAgentId) {
-          onSnapshot(doc(obsDb, "obs_overlays", targetAgentId), (snap) => {
-            if (snap.exists()) {
-              const data = snap.data();
+      // Busca imediata no Firestore (resolve quando o OBS tem localStorage vazio ou foto enviada do PC)
+      async function bootstrapObsFromCloud() {
+        syncFromLocalStorage();
+        if (currentObsAgent) renderObsOverlay();
+
+        try {
+          const obsDb = getObsFirestore();
+          const docIdToWatch = targetAgentId || "latest_active_agent";
+          const snap = await getDoc(doc(obsDb, "obs_overlays", docIdToWatch));
+          if (snap.exists()) {
+            const data = snap.data();
+            currentObsAgent = data.agent;
+            currentObsCfg = { ...currentObsCfg, ...(data.obsCfg || {}) };
+            renderObsOverlay();
+          }
+
+          onSnapshot(doc(obsDb, "obs_overlays", docIdToWatch), (liveSnap) => {
+            if (liveSnap.exists()) {
+              const data = liveSnap.data();
               currentObsAgent = data.agent;
               currentObsCfg = { ...currentObsCfg, ...(data.obsCfg || {}) };
               let newRoll = null;
@@ -5609,19 +5630,35 @@
               renderObsOverlay(newRoll);
             }
           });
-        }
-        if (targetRoomCode && targetAgentId) {
-          onSnapshot(doc(obsDb, "sessions", targetRoomCode, "agents", targetAgentId), (snap) => {
-            if (snap.exists()) {
-              currentObsAgent = snap.data();
-              renderObsOverlay();
-            }
-          });
-        }
-      } catch (err) {}
 
-      syncFromLocalStorage();
-      renderObsOverlay();
+          if (targetRoomCode && targetAgentId) {
+            onSnapshot(doc(obsDb, "sessions", targetRoomCode, "agents", targetAgentId), (roomSnap) => {
+              if (roomSnap.exists()) {
+                currentObsAgent = roomSnap.data();
+                renderObsOverlay();
+              }
+            });
+          }
+        } catch (err) {
+          if (!currentObsAgent) {
+            currentObsAgent = {
+              id: "fallback",
+              name: "Agente",
+              nex: 5,
+              affinity: "Nenhuma",
+              currentPv: 20,
+              _maxPv: 20,
+              currentPe: 4,
+              _maxPe: 4,
+              currentSan: 15,
+              _maxSan: 15
+            };
+            renderObsOverlay();
+          }
+        }
+      }
+
+      bootstrapObsFromCloud();
     }
 
     // ==================== 2. MODO NORMAL DA FICHA: PAINEL DE CONFIGURAÇÃO DO OBS ====================
@@ -5647,7 +5684,7 @@
                 const isCrit = node.classList.contains("border-amber-400");
                 const isFumble = node.classList.contains("border-rose-500");
                 if (result) {
-                  broadcastObsSnapshot({ title, detail, result, isCrit, isFumble });
+                  broadcastObsSnapshot({ title, detail, result, isCrit, isFumble }, true);
                 }
               }
             });
@@ -5678,7 +5715,7 @@
                   <span class="text-xl">🎥</span>
                   <div>
                     <h3 class="text-base font-bold text-white">OBS Studio — Portrait Estilo Dossiê (Autônomo)</h3>
-                    <p class="text-xs text-zinc-400">Funciona sozinho no OBS sem precisar deixar nenhuma aba aberta</p>
+                    <p class="text-xs text-zinc-400">Sincronizado com o seu agente ativo sem precisar manter abas abertas</p>
                   </div>
                 </div>
                 <button type="button" id="btn-close-obs-modal" class="text-zinc-400 hover:text-white text-lg px-2">✕</button>
@@ -5722,6 +5759,9 @@
           return;
         }
 
+        // Garante envio imediato do agente atual para a nuvem sempre que abrir o painel
+        broadcastObsSnapshot(null, true);
+
         const cfg = getObsSettingsMap()[ag.id] || {};
         const obsUrl = buildObsUrl(ag.id, selectedObsLayout);
         const recSize = selectedObsLayout === "webcam" ? "Largura: 540 × Altura: 250" : "Largura: 390 × Altura: 490";
@@ -5729,8 +5769,8 @@
         container.innerHTML = `
           <div class="bg-[#09090b] border border-amber-500/35 rounded-2xl p-4 space-y-3">
             <div class="flex flex-wrap items-center justify-between gap-2">
-              <span class="text-xs font-bold text-amber-300 uppercase tracking-wider">1. Formato & Link Autônomo do OBS</span>
-              <span class="text-[11px] font-mono text-zinc-400">Agente: <strong class="text-white">${ag.name}</strong></span>
+              <span class="text-xs font-bold text-amber-300 uppercase tracking-wider">1. Formato & Link do OBS</span>
+              <span class="text-[11px] font-mono text-zinc-400">Agente vinculado: <strong class="text-emerald-400">${ag.name} (NEX ${ag.nex || 5}%)</strong></span>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
@@ -5765,18 +5805,18 @@
             </div>
             <p class="text-[11px] text-zinc-400">
               No OBS Studio: <strong>Fontes (+) → Navegador</strong> → Cole o link acima → Dimensões: <code class="text-amber-300 font-mono">${recSize}</code>.
-              <br><span class="text-emerald-400">✓ Funciona sozinho:</span> Os dados atuais já vão embutidos no link (não exige manter esta aba aberta). Se deixar a aba aberta, ele também atualiza PV/PE/SAN e dados em tempo real.
+              <br><span class="text-emerald-400">✓ Vinculado a ${ag.name}:</span> Se você alterar a foto abaixo, clique em <strong>Salvar & Atualizar Link</strong> e copie o novo link para o OBS.
             </p>
           </div>
 
           <div class="bg-[#09090b] border border-[#26262e] rounded-2xl p-4 space-y-3">
-            <span class="block text-xs font-bold text-white uppercase tracking-wider">2. Fotografia do Agente (Cole a URL Direta da Imagem)</span>
+            <span class="block text-xs font-bold text-white uppercase tracking-wider">2. Fotografia do Agente (URL ou Upload do Computador)</span>
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
               <div>
                 <label class="block text-zinc-400 mb-1">Foto Padrão (Normal)</label>
                 <div class="flex gap-1.5">
-                  <input type="text" id="obs-input-normal" value="${cfg.avatarNormal || ""}" placeholder="https://i.imgur.com/..."
+                  <input type="text" id="obs-input-normal" value="${cfg.avatarNormal || ""}" placeholder="https://... ou clique na pasta →"
                     class="flex-1 bg-[#111114] border border-[#26262e] rounded-xl px-3 py-2 text-white outline-none" />
                   <label class="px-2.5 py-2 rounded-xl bg-[#18181d] hover:bg-zinc-800 border border-[#26262e] text-zinc-300 cursor-pointer shrink-0">
                     📁 <input type="file" accept="image/*" data-obs-file="avatarNormal" class="hidden" />
@@ -5900,7 +5940,8 @@
         if (!fileInput || !fileInput.files?.[0]) return;
         const fieldKey = fileInput.getAttribute("data-obs-file");
         const reader = new FileReader();
-        reader.onload = (ev) => {
+        reader.onload = async (ev) => {
+          const compressed = await compressImageDataUrl(ev.target.result, 340, 0.8);
           const textInputId = {
             avatarNormal: "obs-input-normal",
             avatarHurt: "obs-input-hurt",
@@ -5908,7 +5949,7 @@
             avatarDying: "obs-input-dying"
           }[fieldKey];
           const textInput = document.getElementById(textInputId);
-          if (textInput) textInput.value = ev.target.result;
+          if (textInput) textInput.value = compressed;
         };
         reader.readAsDataURL(fileInput.files[0]);
       });
@@ -5916,7 +5957,7 @@
       function bootObsConfigModule() {
         injectObsPortraitButtonAndModal();
         attachObsRollListener();
-        broadcastObsSnapshot();
+        broadcastObsSnapshot(null, true);
         setInterval(() => {
           if (!document.getElementById("btn-open-obs-modal")) {
             injectObsPortraitButtonAndModal();
