@@ -26,7 +26,7 @@
         }
       }
     }
-  </script>
+  </>
   <style>
     :root {
       --accent: #a855f7;
@@ -1241,7 +1241,7 @@
   <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2.5 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
 
   <!-- ==================== FULL COMPENDIUM DATABASES & LOGIC ==================== -->
-  <script>
+  <>
     const NEX_STEPS = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 99];
 
     const ATTRIBUTE_INFO = [
@@ -4084,7 +4084,7 @@
         refreshAll();
       }
     });
-  </script>
+  </>
 
   <!-- ==================== INTEGRATED MULTIPLAYER & GM SCREEN MODULE (SINGLE-FILE) ==================== -->
   <script type="module">
@@ -5081,7 +5081,6 @@
       Medo: { ink: "#1e3a8a", barPv: "#881337", barPe: "#92400e", barSan: "#1e3a8a", stamp: "#1e3a8a" }
     };
 
-    // Instância isolada para não conflitar com o Login Google da Mesa
     const obsApp = getApps().find(a => a.name === "obs-portrait-app")
       || initializeApp(OBS_FIRE_CONFIG, "obs-portrait-app");
     const obsAuth = getAuth(obsApp);
@@ -5321,7 +5320,7 @@
       if (!ag) return;
       const cfg = getObsSettingsMap()[ag.id] || {};
       const rollWithId = rollEvent
-        ? { ...rollEvent, rollId: rollEvent.rollId || Date.now() }
+        ? { ...rollEvent, rollId: rollEvent.rollId || `${Date.now()}_${Math.random().toString(36).slice(2, 7)}` }
         : null;
 
       const payload = {
@@ -5367,9 +5366,9 @@
       let currentObsAgent = embeddedData?.agent?.name ? embeddedData.agent : null;
       let currentObsCfg = embeddedData?.obsCfg || {};
       let lastRollTimeout = null;
-      let lastSeenRollId = null;
-      let lastRenderedRollKey = "";
+      const shownRollIds = new Set();
       let lastRenderedHash = "";
+      let activeRollHtml = "";
 
       function showObsDiagnostic(msg) {
         if (currentObsAgent) return;
@@ -5381,24 +5380,42 @@
         `;
       }
 
+      function triggerObsRollPopup(rollEvent, inkColor) {
+        if (hideDiceParam || !rollEvent || !rollEvent.result) return;
+        const uniqueId = String(rollEvent.rollId || `${rollEvent.title}|${rollEvent.result}`);
+        if (shownRollIds.has(uniqueId)) return;
+        shownRollIds.add(uniqueId);
+        if (shownRollIds.size > 30) {
+          const firstKey = shownRollIds.values().next().value;
+          shownRollIds.delete(firstKey);
+        }
+
+        activeRollHtml = `
+          <div class="obs-roll-note mb-3 px-4 py-2.5 rounded-sm obs-paper-card border-2 border-[#8b7d6b] flex items-center justify-between gap-3">
+            <div class="min-w-0">
+              <div class="text-[11px] obs-font-stamp uppercase tracking-wide text-[#2b231d] truncate">${rollEvent.title}</div>
+              <div class="text-[11px] obs-font-typewriter text-[#574b40] truncate">${rollEvent.detail}</div>
+            </div>
+            <div class="text-3xl obs-font-stamp font-bold pl-3 border-l-2 border-dashed border-[#b5a692]"
+                 style="color: ${rollEvent.isCrit ? "#b45309" : rollEvent.isFumble ? "#991b1b" : inkColor};">
+              ${rollEvent.result}
+            </div>
+          </div>
+        `;
+
+        const slot = document.getElementById("obs-live-roll-slot");
+        if (slot) slot.innerHTML = activeRollHtml;
+
+        clearTimeout(lastRollTimeout);
+        lastRollTimeout = setTimeout(() => {
+          activeRollHtml = "";
+          const s = document.getElementById("obs-live-roll-slot");
+          if (s) s.innerHTML = "";
+        }, 4800);
+      }
+
       function renderObsOverlay(rollEvent = null, force = false) {
         if (!currentObsAgent) return;
-
-        // Bloqueia rolagem duplicada vinda simultaneamente do BroadcastChannel e do Firestore
-        if (rollEvent) {
-          const rollKey = `${rollEvent.title}|${rollEvent.detail}|${rollEvent.result}`;
-          if (rollEvent.rollId && rollEvent.rollId === lastSeenRollId) {
-            rollEvent = null;
-          } else if (rollKey === lastRenderedRollKey) {
-            rollEvent = null;
-          } else {
-            if (rollEvent.rollId) lastSeenRollId = rollEvent.rollId;
-            lastRenderedRollKey = rollKey;
-            setTimeout(() => {
-              if (lastRenderedRollKey === rollKey) lastRenderedRollKey = "";
-            }, 2500);
-          }
-        }
 
         const ag = currentObsAgent;
         const cfg = currentObsCfg || {};
@@ -5416,11 +5433,14 @@
           san: curSan, msan: vitals.maxSan,
           img: cfg.avatarNormal, imgh: cfg.avatarHurt,
           imgi: cfg.avatarInsane, imgd: cfg.avatarDying,
-          sb: cfg.showBars, sn: cfg.showName, sx: cfg.showNex,
-          roll: rollEvent ? rollEvent.rollId || rollEvent.result : null
+          sb: cfg.showBars, sn: cfg.showName, sx: cfg.showNex
         });
 
-        if (!force && !rollEvent && stateHash === lastRenderedHash) return;
+        // Se só chegou uma rolagem nova e a ficha não mudou, atualiza SÓ o balão sem re-renderizar o card inteiro
+        if (!force && stateHash === lastRenderedHash) {
+          if (rollEvent) triggerObsRollPopup(rollEvent, palette.ink);
+          return;
+        }
         lastRenderedHash = stateHash;
 
         const pvPct = Math.min(100, Math.max(0, Math.round((curPv / vitals.maxPv) * 100)));
@@ -5460,22 +5480,6 @@
         const showName = cfg.showName !== false;
         const showNex = cfg.showNex !== false;
 
-        const existingRoll = document.getElementById("obs-live-roll-slot")?.innerHTML || "";
-        const rollHtml = (!hideDiceParam && rollEvent)
-          ? `
-            <div class="obs-roll-note mb-3 px-4 py-2.5 rounded-sm obs-paper-card border-2 border-[#8b7d6b] flex items-center justify-between gap-3">
-              <div class="min-w-0">
-                <div class="text-[11px] obs-font-stamp uppercase tracking-wide text-[#2b231d] truncate">${rollEvent.title}</div>
-                <div class="text-[11px] obs-font-typewriter text-[#574b40] truncate">${rollEvent.detail}</div>
-              </div>
-              <div class="text-3xl obs-font-stamp font-bold pl-3 border-l-2 border-dashed border-[#b5a692]"
-                   style="color: ${rollEvent.isCrit ? "#b45309" : rollEvent.isFumble ? "#991b1b" : palette.ink};">
-                ${rollEvent.result}
-              </div>
-            </div>
-          `
-          : existingRoll;
-
         if (layoutMode === "webcam") {
           const photoHtml = chosenUrl
             ? `<img src="${chosenUrl}" alt="${ag.name}" class="w-full h-full object-cover object-top transition-all duration-300 ${autoFilterClass}" />`
@@ -5485,7 +5489,7 @@
 
           stage.innerHTML = `
             <div class="w-[500px] max-w-full flex flex-col items-stretch">
-              <div id="obs-live-roll-slot">${rollHtml}</div>
+              <div id="obs-live-roll-slot">${activeRollHtml}</div>
 
               <div class="relative flex items-center gap-4 p-3.5 pt-4 rounded-sm obs-paper-card">
                 <div class="obs-tape-strip absolute -top-2.5 left-10 w-20 h-4 -rotate-2"></div>
@@ -5562,13 +5566,7 @@
             </div>
           `;
 
-          if (rollEvent) {
-            clearTimeout(lastRollTimeout);
-            lastRollTimeout = setTimeout(() => {
-              const slot = document.getElementById("obs-live-roll-slot");
-              if (slot) slot.innerHTML = "";
-            }, 4800);
-          }
+          if (rollEvent) triggerObsRollPopup(rollEvent, palette.ink);
           return;
         }
 
@@ -5580,7 +5578,7 @@
 
         stage.innerHTML = `
           <div class="w-[350px] flex flex-col items-stretch">
-            <div id="obs-live-roll-slot">${rollHtml}</div>
+            <div id="obs-live-roll-slot">${activeRollHtml}</div>
 
             <div class="relative p-4 pt-5 rounded-sm obs-paper-card space-y-3">
               <div class="obs-tape-strip absolute -top-2.5 left-1/2 -translate-x-1/2 w-24 h-4 -rotate-1"></div>
@@ -5646,13 +5644,7 @@
           </div>
         `;
 
-        if (rollEvent) {
-          clearTimeout(lastRollTimeout);
-          lastRollTimeout = setTimeout(() => {
-            const slot = document.getElementById("obs-live-roll-slot");
-            if (slot) slot.innerHTML = "";
-          }, 4800);
-        }
+        if (rollEvent) triggerObsRollPopup(rollEvent, palette.ink);
       }
 
       function applyCloudPayload(data) {
@@ -5689,7 +5681,7 @@
           if (targetAgentId && data.agent?.id !== targetAgentId) return;
           currentObsAgent = data.agent;
           currentObsCfg = { ...currentObsCfg, ...(data.obsCfg || {}) };
-          renderObsOverlay(data.rollEvent || null, !data.rollEvent);
+          renderObsOverlay(data.rollEvent || null);
         };
       }
 
@@ -5753,8 +5745,7 @@
     if (!isObsMode) {
       let lastRosterJson = localStorage.getItem("op_agents_roster_v1") || "";
       let lastCfgJson = localStorage.getItem(OBS_CFG_KEY) || "";
-      let lastDispatchedRollSig = "";
-      let lastDispatchedRollTs = 0;
+      let lastRollDispatchTs = 0;
 
       setInterval(() => {
         const curRoster = localStorage.getItem("op_agents_roster_v1") || "";
@@ -5772,8 +5763,8 @@
         toastBox.dataset.obsBound = "1";
 
         const obsRollWatcher = new MutationObserver((mutations) => {
-          mutations.forEach((m) => {
-            m.addedNodes.forEach((node) => {
+          for (const m of mutations) {
+            for (const node of m.addedNodes) {
               if (node.nodeType === 1) {
                 const title = node.querySelector("span.text-xs.font-semibold")?.textContent?.trim() || "Teste";
                 const detail = node.querySelector("p.text-xs.font-mono")?.textContent?.trim() || "";
@@ -5781,16 +5772,17 @@
                 const isCrit = node.classList.contains("border-amber-400");
                 const isFumble = node.classList.contains("border-rose-500");
                 if (result) {
-                  const sig = `${title}|${detail}|${result}`;
                   const now = Date.now();
-                  if (sig === lastDispatchedRollSig && now - lastDispatchedRollTs < 600) return;
-                  lastDispatchedRollSig = sig;
-                  lastDispatchedRollTs = now;
-                  broadcastObsSnapshot({ title, detail, result, isCrit, isFumble, rollId: now }, true);
+                  // Bloqueia qualquer segundo disparo dentro de 900ms
+                  if (now - lastRollDispatchTs < 900) return;
+                  lastRollDispatchTs = now;
+                  const rollId = `${now}_${Math.random().toString(36).slice(2, 7)}`;
+                  broadcastObsSnapshot({ title, detail, result, isCrit, isFumble, rollId }, true);
+                  return;
                 }
               }
-            });
-          });
+            }
+          }
         });
         obsRollWatcher.observe(toastBox, { childList: true });
       }
