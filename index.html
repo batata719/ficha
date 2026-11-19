@@ -5660,7 +5660,24 @@
         } catch (e) {}
         return false;
       }
+      let lastRenderedRollKey = "";
 
+      function renderObsOverlay(rollEvent = null, force = false) {
+        if (!currentObsAgent) return;
+
+        // Ignora rolagem duplicada vinda simultaneamente do BroadcastChannel e do Firestore
+        if (rollEvent) {
+          const rollKey = `${rollEvent.title}|${rollEvent.detail}|${rollEvent.result}`;
+          if (rollEvent.rollId && rollEvent.rollId === lastSeenRollId) {
+            rollEvent = null;
+          } else if (rollKey === lastRenderedRollKey && !force) {
+            rollEvent = null;
+          } else {
+            if (rollEvent.rollId) lastSeenRollId = rollEvent.rollId;
+            lastRenderedRollKey = rollKey;
+            setTimeout(() => { if (lastRenderedRollKey === rollKey) lastRenderedRollKey = ""; }, 2500);
+          }
+        }
       if (obsChannel) {
         obsChannel.onmessage = (ev) => {
           const data = ev.data;
@@ -5668,7 +5685,7 @@
           if (targetAgentId && data.agent?.id !== targetAgentId) return;
           currentObsAgent = data.agent;
           currentObsCfg = { ...currentObsCfg, ...(data.obsCfg || {}) };
-          renderObsOverlay(data.rollEvent || null, true);
+          renderObsOverlay(data.rollEvent || null, !data.rollEvent);
         };
       }
 
@@ -5743,9 +5760,14 @@
         }
       }, 400);
 
+      let lastDispatchedRollSig = "";
+      let lastDispatchedRollTs = 0;
+
       function attachObsRollListener() {
         const toastBox = document.getElementById("toast-container");
-        if (!toastBox) return;
+        if (!toastBox || toastBox.dataset.obsBound === "1") return;
+        toastBox.dataset.obsBound = "1";
+
         const obsRollWatcher = new MutationObserver((mutations) => {
           mutations.forEach((m) => {
             m.addedNodes.forEach((node) => {
@@ -5756,12 +5778,19 @@
                 const isCrit = node.classList.contains("border-amber-400");
                 const isFumble = node.classList.contains("border-rose-500");
                 if (result) {
-                  broadcastObsSnapshot({ title, detail, result, isCrit, isFumble }, true);
+                  const sig = `${title}|${detail}|${result}`;
+                  const now = Date.now();
+                  if (sig === lastDispatchedRollSig && now - lastDispatchedRollTs < 600) return;
+                  lastDispatchedRollSig = sig;
+                  lastDispatchedRollTs = now;
+                  broadcastObsSnapshot({ title, detail, result, isCrit, isFumble, rollId: now }, true);
                 }
               }
             });
           });
         });
+        obsRollWatcher.observe(toastBox, { childList: true });
+      }
         obsRollWatcher.observe(toastBox, { childList: true });
       }
 
