@@ -5081,28 +5081,33 @@
       Medo: { ink: "#1e3a8a", barPv: "#881337", barPe: "#92400e", barSan: "#1e3a8a", stamp: "#1e3a8a" }
     };
 
-    const obsApp = getApps().length ? getApps()[0] : initializeApp(OBS_FIRE_CONFIG);
+    // Instância isolada para não conflitar com o Login Google da Mesa
+    const obsApp = getApps().find(a => a.name === "obs-portrait-app")
+      || initializeApp(OBS_FIRE_CONFIG, "obs-portrait-app");
     const obsAuth = getAuth(obsApp);
     const obsDb = getFirestore(obsApp);
 
     let obsSyncStatusText = "Conectando ao servidor...";
 
-    let authReadyPromise = new Promise((resolve) => {
-  onAuthStateChanged(obsAuth, (user) => {
-    if (user) {
-      resolve(user);
-    } else {
-      signInAnonymously(obsAuth)
-        .then((cred) => resolve(cred.user))
-        .catch((err) => {
-          obsSyncStatusText = "Erro Auth: " + (err?.code || err?.message);
-          const statusEl = document.getElementById("obs-cloud-status-badge");
-          if (statusEl) statusEl.textContent = obsSyncStatusText;
-          resolve(null);
-        });
-    }
-  });
-});
+    const authReadyPromise = new Promise((resolve) => {
+      onAuthStateChanged(obsAuth, (user) => {
+        if (user) {
+          resolve(user);
+        } else {
+          signInAnonymously(obsAuth)
+            .then((cred) => resolve(cred.user))
+            .catch((err) => {
+              obsSyncStatusText = `Erro Auth (${err?.code || "falha"}): ative Login Anônimo no Firebase`;
+              const statusEl = document.getElementById("obs-cloud-status-badge");
+              if (statusEl) {
+                statusEl.textContent = obsSyncStatusText;
+                statusEl.className = "text-[11px] font-mono text-rose-400";
+              }
+              resolve(null);
+            });
+        }
+      });
+    });
 
     function getObsSettingsMap() {
       try {
@@ -5164,7 +5169,7 @@
       return { maxPv, maxPe, maxSan };
     }
 
-    function compressImageDataUrl(dataUrl, maxSide = 320, quality = 0.78) {
+    function compressImageDataUrl(dataUrl, maxSide = 280, quality = 0.72) {
       return new Promise((resolve) => {
         if (!dataUrl || !dataUrl.startsWith("data:image")) return resolve(dataUrl);
         const img = new Image();
@@ -5255,12 +5260,11 @@
     async function pushObsCloudStream(ag, cfg, rollEvent = null) {
       if (!ag || !ag.id) return;
       try {
-        const user = await authReadyPromise;
-        if (!user) return;
+        await authReadyPromise;
         const cleanCfg = { ...cfg };
         for (const k of ["avatarNormal", "avatarHurt", "avatarInsane", "avatarDying"]) {
           if (cleanCfg[k] && cleanCfg[k].startsWith("data:")) {
-            cleanCfg[k] = await compressImageDataUrl(cleanCfg[k], 320, 0.78);
+            cleanCfg[k] = await compressImageDataUrl(cleanCfg[k], 280, 0.72);
           }
         }
 
@@ -5289,7 +5293,7 @@
         };
 
         await setDoc(doc(obsDb, "sessions", "OBS_LIVE_PORTRAIT", "agents", ag.id), payload);
-await setDoc(doc(obsDb, "sessions", "OBS_LIVE_PORTRAIT", "agents", "latest_active_agent"), payload);
+        await setDoc(doc(obsDb, "sessions", "OBS_LIVE_PORTRAIT", "agents", "latest_active_agent"), payload);
 
         const hora = new Date(nowTs).toLocaleTimeString("pt-BR");
         obsSyncStatusText = `✓ Sincronizado com o OBS (${hora})`;
@@ -5299,7 +5303,7 @@ await setDoc(doc(obsDb, "sessions", "OBS_LIVE_PORTRAIT", "agents", "latest_activ
           statusEl.className = "text-[11px] font-mono text-emerald-400";
         }
       } catch (err) {
-        obsSyncStatusText = `⚠ Falha no envio: ${err?.code || err?.message || "erro"}`;
+        obsSyncStatusText = `⚠ Erro Firestore (${err?.code || "permissão"}): verifique Regras ou Login Anônimo`;
         const statusEl = document.getElementById("obs-cloud-status-badge");
         if (statusEl) {
           statusEl.textContent = obsSyncStatusText;
@@ -5357,6 +5361,16 @@ await setDoc(doc(obsDb, "sessions", "OBS_LIVE_PORTRAIT", "agents", "latest_activ
       let lastRollTimeout = null;
       let lastSeenRollId = null;
       let lastRenderedHash = "";
+
+      function showObsDiagnostic(msg) {
+        if (currentObsAgent) return;
+        stage.innerHTML = `
+          <div class="obs-paper-card p-4 rounded-sm max-w-md obs-font-typewriter text-xs space-y-1">
+            <div class="obs-font-stamp font-bold text-sm text-[#7f1d1d]">AGUARDANDO SINAL DA FICHA...</div>
+            <p class="text-[#3b3129]">${msg}</p>
+          </div>
+        `;
+      }
 
       function renderObsOverlay(rollEvent = null, force = false) {
         if (!currentObsAgent) return;
@@ -5660,16 +5674,34 @@ await setDoc(doc(obsDb, "sessions", "OBS_LIVE_PORTRAIT", "agents", "latest_activ
 
       async function bootstrapObsRealtime() {
         syncFromLocalStorage();
-        if (currentObsAgent) renderObsOverlay(null, true);
+        if (currentObsAgent) {
+          renderObsOverlay(null, true);
+        } else {
+          showObsDiagnostic("Conectando ao banco de dados da Ordo Realitas...");
+        }
 
-        await authReadyPromise;
+        const user = await authReadyPromise;
+        if (!user) {
+          showObsDiagnostic("Erro de autenticação: ative o provedor 'Anônimo' em Authentication > Sign-in method no Firebase Console.");
+          return;
+        }
+
         const docIdToWatch = targetAgentId || "latest_active_agent";
         const overlayDocRef = doc(obsDb, "sessions", "OBS_LIVE_PORTRAIT", "agents", docIdToWatch);
 
-        // 1) Listener em tempo real padrão
-        onSnapshot(overlayDocRef, (liveSnap) => {
-          if (liveSnap.exists()) applyCloudPayload(liveSnap.data());
-        });
+        onSnapshot(
+          overlayDocRef,
+          (liveSnap) => {
+            if (liveSnap.exists()) {
+              applyCloudPayload(liveSnap.data());
+            } else {
+              showObsDiagnostic("Abra a ficha no navegador e altere algum valor (ou clique em OBS Portrait) para enviar os dados.");
+            }
+          },
+          (err) => {
+            showObsDiagnostic(`Erro Firestore (${err.code}): verifique as Regras de Segurança do banco.`);
+          }
+        );
 
         if (targetRoomCode && targetAgentId) {
           onSnapshot(doc(obsDb, "sessions", targetRoomCode, "agents", targetAgentId), (roomSnap) => {
@@ -5680,20 +5712,10 @@ await setDoc(doc(obsDb, "sessions", "OBS_LIVE_PORTRAIT", "agents", "latest_activ
           });
         }
 
-        // 2) Polling direto do servidor a cada 1.2s (garante atualização mesmo quando o OBS suspende WebSockets)
         setInterval(async () => {
           try {
             const snap = await getDocFromServer(overlayDocRef);
-            if (snap.exists()) {
-              applyCloudPayload(snap.data());
-            }
-            if (targetRoomCode && targetAgentId) {
-              const rSnap = await getDocFromServer(doc(obsDb, "sessions", targetRoomCode, "agents", targetAgentId));
-              if (rSnap.exists()) {
-                currentObsAgent = rSnap.data();
-                renderObsOverlay();
-              }
-            }
+            if (snap.exists()) applyCloudPayload(snap.data());
           } catch (e) {
             try {
               const fallbackSnap = await getDoc(overlayDocRef);
@@ -5990,7 +6012,7 @@ await setDoc(doc(obsDb, "sessions", "OBS_LIVE_PORTRAIT", "agents", "latest_activ
         const fieldKey = fileInput.getAttribute("data-obs-file");
         const reader = new FileReader();
         reader.onload = async (ev) => {
-          const compressed = await compressImageDataUrl(ev.target.result, 320, 0.78);
+          const compressed = await compressImageDataUrl(ev.target.result, 280, 0.72);
           const textInputId = {
             avatarNormal: "obs-input-normal",
             avatarHurt: "obs-input-hurt",
