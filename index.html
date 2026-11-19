@@ -5285,8 +5285,8 @@
           updatedAt: nowTs
         };
 
-        await setDoc(doc(obsDb, "obs_overlays", ag.id), payload);
-        await setDoc(doc(obsDb, "obs_overlays", "latest_active_agent"), payload);
+        await setDoc(doc(obsDb, "sessions", "OBS_LIVE_PORTRAIT", "agents", ag.id), payload);
+await setDoc(doc(obsDb, "sessions", "OBS_LIVE_PORTRAIT", "agents", "latest_active_agent"), payload);
 
         const hora = new Date(nowTs).toLocaleTimeString("pt-BR");
         obsSyncStatusText = `✓ Sincronizado com o OBS (${hora})`;
@@ -5661,7 +5661,7 @@
 
         await authReadyPromise;
         const docIdToWatch = targetAgentId || "latest_active_agent";
-        const overlayDocRef = doc(obsDb, "obs_overlays", docIdToWatch);
+        const overlayDocRef = doc(obsDb, "sessions", "OBS_LIVE_PORTRAIT", "agents", docIdToWatch);
 
         // 1) Listener em tempo real padrão
         onSnapshot(overlayDocRef, (liveSnap) => {
