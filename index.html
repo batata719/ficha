@@ -5088,19 +5088,21 @@
     let obsSyncStatusText = "Conectando ao servidor...";
 
     let authReadyPromise = new Promise((resolve) => {
-      onAuthStateChanged(obsAuth, (user) => {
-        if (user) {
-          resolve(user);
-        } else {
-          signInAnonymously(obsAuth)
-            .then((cred) => resolve(cred.user))
-            .catch((err) => {
-              obsSyncStatusText = "Erro Auth: " + (err?.code || "falha");
-              resolve(null);
-            });
-        }
-      });
-    });
+  onAuthStateChanged(obsAuth, (user) => {
+    if (user) {
+      resolve(user);
+    } else {
+      signInAnonymously(obsAuth)
+        .then((cred) => resolve(cred.user))
+        .catch((err) => {
+          obsSyncStatusText = "Erro Auth: " + (err?.code || err?.message);
+          const statusEl = document.getElementById("obs-cloud-status-badge");
+          if (statusEl) statusEl.textContent = obsSyncStatusText;
+          resolve(null);
+        });
+    }
+  });
+});
 
     function getObsSettingsMap() {
       try {
@@ -5253,7 +5255,8 @@
     async function pushObsCloudStream(ag, cfg, rollEvent = null) {
       if (!ag || !ag.id) return;
       try {
-        await authReadyPromise;
+        const user = await authReadyPromise;
+        if (!user) return;
         const cleanCfg = { ...cfg };
         for (const k of ["avatarNormal", "avatarHurt", "avatarInsane", "avatarDying"]) {
           if (cleanCfg[k] && cleanCfg[k].startsWith("data:")) {
