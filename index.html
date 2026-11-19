@@ -4976,5 +4976,663 @@
       bootMultiplayerModule();
     }
   </script>
+
+  <!-- ==================== OBS STUDIO STREAM PORTRAIT SYSTEM (NON-INTRUSIVE) ==================== -->
+  <style id="obs-portrait-styles">
+    html.obs-stream-mode,
+    html.obs-stream-mode body {
+      background: transparent !important;
+      background-color: rgba(0, 0, 0, 0) !important;
+      overflow: hidden !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    html.obs-stream-mode body > *:not(#obs-stream-stage) {
+      display: none !important;
+    }
+    @keyframes obsPortraitPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.018); }
+    }
+    @keyframes obsRollPop {
+      0% { opacity: 0; transform: translateY(16px) scale(0.92); }
+      15% { opacity: 1; transform: translateY(0) scale(1.03); }
+      25% { transform: translateY(0) scale(1); }
+      85% { opacity: 1; transform: translateY(0) scale(1); }
+      100% { opacity: 0; transform: translateY(-10px) scale(0.96); }
+    }
+    .obs-roll-banner {
+      animation: obsRollPop 4.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    .obs-hurt-filter {
+      filter: contrast(1.18) saturate(1.35) drop-shadow(0 0 18px rgba(239, 68, 68, 0.55));
+    }
+    .obs-mad-filter {
+      filter: hue-rotate(25deg) contrast(1.25) drop-shadow(0 0 18px rgba(56, 189, 248, 0.55));
+    }
+    .obs-dying-filter {
+      filter: grayscale(0.85) contrast(1.3) brightness(0.75);
+    }
+  </style>
+
+  <script type="module">
+    import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import {
+      getFirestore,
+      doc,
+      onSnapshot
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    const OBS_FIRE_CONFIG = {
+      apiKey: "AIzaSyDKc688y119WyFzE5yGmxkaeYQBtLlI3FM",
+      authDomain: "ordo-realitas-mesa.firebaseapp.com",
+      projectId: "ordo-realitas-mesa",
+      storageBucket: "ordo-realitas-mesa.firebasestorage.app",
+      messagingSenderId: "1049343664232",
+      appId: "1:1049343664232:web:00818b1ce7f88101931bdd"
+    };
+
+    const OBS_CFG_KEY = "op_obs_portrait_settings_v1";
+    const obsChannel = typeof BroadcastChannel !== "undefined" ? new BroadcastChannel("ordo_obs_portrait_bus") : null;
+
+    const ELEMENT_OBS_COLORS = {
+      Nenhuma: { primary: "#a855f7", glow: "rgba(168,85,247,0.45)", badge: "PARANORMAL" },
+      Sangue: { primary: "#ef4444", glow: "rgba(239,68,68,0.55)", badge: "SANGUE" },
+      Morte: { primary: "#a1a1aa", glow: "rgba(161,161,170,0.5)", badge: "MORTE" },
+      Conhecimento: { primary: "#f59e0b", glow: "rgba(245,158,11,0.55)", badge: "CONHECIMENTO" },
+      Energia: { primary: "#c084fc", glow: "rgba(192,132,252,0.6)", badge: "ENERGIA" },
+      Medo: { primary: "#38bdf8", glow: "rgba(56,189,248,0.6)", badge: "MEDO" }
+    };
+
+    function getObsSettingsMap() {
+      try {
+        return JSON.parse(localStorage.getItem(OBS_CFG_KEY) || "{}");
+      } catch (e) {
+        return {};
+      }
+    }
+
+    function saveObsSettingsForAgent(agentId, cfg) {
+      const map = getObsSettingsMap();
+      map[agentId] = { ...(map[agentId] || {}), ...cfg };
+      localStorage.setItem(OBS_CFG_KEY, JSON.stringify(map));
+      broadcastObsSnapshot();
+    }
+
+    function getActiveRosterAgent() {
+      try {
+        const raw = localStorage.getItem("op_agents_roster_v1");
+        if (!raw) return null;
+        const roster = JSON.parse(raw);
+        return roster.agents.find(a => a.id === roster.activeId) || roster.agents[0] || null;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function computeObsAgentVitals(ag) {
+      const nexSteps = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 99];
+      const level = Math.max(1, nexSteps.indexOf(ag.nex || 5) + 1);
+      const attrs = ag.attributes || { AGI: 1, FOR: 1, INT: 1, PRE: 1, VIG: 1 };
+
+      let basePv = 20, perPv = 4, basePe = 2, perPe = 2, baseSan = 12, perSan = 3;
+      if (ag.charClass === "Especialista") {
+        basePv = 16; perPv = 3; basePe = 3; perPe = 3; baseSan = 16; perSan = 4;
+      } else if (ag.charClass === "Ocultista") {
+        basePv = 12; perPv = 2; basePe = 4; perPe = 4; baseSan = 20; perSan = 5;
+      }
+
+      let originPv = ag.origin === "Desgarrado" ? level : 0;
+      let originSan = ag.origin === "Vítima" ? level : 0;
+      let originPe = ag.origin === "Universitário" ? (1 + Math.floor(level / 2)) : 0;
+
+      let powerPv = 0, powerPe = 0;
+      (ag.abilities || []).forEach(ab => {
+        if (ab.name === "Sangue de Ferro") powerPv += level * 2;
+        if (ab.name === "Potencial Aprimorado") powerPe += level * (ab.affinity ? 2 : 1);
+      });
+
+      const maxPv = Math.max(1, basePv + attrs.VIG + (level - 1) * (perPv + attrs.VIG) + originPv + powerPv + (ag.bonusPv || 0));
+      const maxPe = Math.max(1, basePe + attrs.PRE + (level - 1) * (perPe + attrs.PRE) + originPe + powerPe + (ag.bonusPe || 0));
+      let maxSan = Math.max(1, baseSan + (level - 1) * perSan + originSan + (ag.bonusSan || 0));
+      if (ag.origin === "Cultista Arrependido") maxSan = Math.floor(maxSan / 2);
+
+      return { maxPv, maxPe, maxSan };
+    }
+
+    function broadcastObsSnapshot(rollEvent = null) {
+      const ag = getActiveRosterAgent();
+      if (!ag) return;
+      const cfg = getObsSettingsMap()[ag.id] || {};
+      const payload = {
+        type: "OBS_PORTRAIT_UPDATE",
+        agent: ag,
+        obsCfg: cfg,
+        rollEvent,
+        ts: Date.now()
+      };
+      if (obsChannel) obsChannel.postMessage(payload);
+    }
+
+    // ==================== 1. MODO OVERLAY TRANSPARENTE (?obs=1) ====================
+    const urlParams = new URLSearchParams(window.location.search);
+    const isObsMode = urlParams.get("obs") === "1";
+
+    if (isObsMode) {
+      document.documentElement.classList.add("obs-stream-mode");
+
+      const stage = document.createElement("div");
+      stage.id = "obs-stream-stage";
+      stage.className = "w-screen h-screen flex items-end justify-center p-6 select-none relative";
+      document.body.appendChild(stage);
+
+      const targetAgentId = urlParams.get("agent") || null;
+      const targetRoomCode = (urlParams.get("room") || "").trim().toUpperCase();
+      const layoutMode = urlParams.get("layout") || "card"; // card | minimal | compact
+      const hideBarsParam = urlParams.get("bars") === "0";
+      const hideDiceParam = urlParams.get("dice") === "0";
+
+      let currentObsAgent = null;
+      let currentObsCfg = {};
+      let lastRollTimeout = null;
+
+      function resolvePortraitImage(ag, cfg, vitals) {
+        const curPv = ag.currentPv ?? vitals.maxPv;
+        const curSan = ag.currentSan ?? vitals.maxSan;
+        const isDying = curPv <= 0;
+        const isInsane = curSan <= 0;
+        const isHurt = curPv <= Math.floor(vitals.maxPv / 2);
+        const isPerturbed = curSan <= Math.floor(vitals.maxSan / 2);
+
+        let chosenUrl = cfg.avatarNormal || "";
+        let autoFilterClass = "";
+        let statusLabel = "";
+
+        if (isDying) {
+          chosenUrl = cfg.avatarDying || cfg.avatarHurt || chosenUrl;
+          autoFilterClass = cfg.avatarDying ? "" : "obs-dying-filter";
+          statusLabel = "MORRENDO";
+        } else if (isInsane) {
+          chosenUrl = cfg.avatarInsane || cfg.avatarHurt || chosenUrl;
+          autoFilterClass = cfg.avatarInsane ? "" : "obs-mad-filter";
+          statusLabel = "ENLOUQUECENDO";
+        } else if (isHurt) {
+          chosenUrl = cfg.avatarHurt || chosenUrl;
+          autoFilterClass = cfg.avatarHurt ? "" : "obs-hurt-filter";
+          statusLabel = "MACHUCADO";
+        } else if (isPerturbed) {
+          chosenUrl = cfg.avatarInsane || chosenUrl;
+          autoFilterClass = cfg.avatarInsane ? "" : "obs-mad-filter";
+          statusLabel = "PERTURBADO";
+        }
+
+        return { chosenUrl, autoFilterClass, statusLabel };
+      }
+
+      function renderObsOverlay(rollEvent = null) {
+        if (!currentObsAgent) {
+          stage.innerHTML = `
+            <div class="px-4 py-2 rounded-xl bg-black/70 border border-purple-500/40 text-xs font-mono text-purple-200">
+              Aguardando sincronização do Agente...
+            </div>
+          `;
+          return;
+        }
+
+        const ag = currentObsAgent;
+        const cfg = currentObsCfg || {};
+        const vitals = computeObsAgentVitals(ag);
+        const theme = ELEMENT_OBS_COLORS[ag.affinity] || ELEMENT_OBS_COLORS.Nenhuma;
+        const { chosenUrl, autoFilterClass, statusLabel } = resolvePortraitImage(ag, cfg, vitals);
+
+        const curPv = Math.max(0, ag.currentPv ?? vitals.maxPv);
+        const curPe = Math.max(0, ag.currentPe ?? vitals.maxPe);
+        const curSan = Math.max(0, ag.currentSan ?? vitals.maxSan);
+
+        const pvPct = Math.min(100, Math.round((curPv / vitals.maxPv) * 100));
+        const pePct = Math.min(100, Math.round((curPe / vitals.maxPe) * 100));
+        const sanPct = Math.min(100, Math.round((curSan / vitals.maxSan) * 100));
+
+        const showBars = !hideBarsParam && cfg.showBars !== false;
+        const showName = cfg.showName !== false;
+        const showNex = cfg.showNex !== false;
+
+        const initials = (ag.name || "AG")
+          .trim()
+          .split(/\s+/)
+          .slice(0, 2)
+          .map(w => w[0]?.toUpperCase() || "")
+          .join("") || "AG";
+
+        const avatarVisual = chosenUrl
+          ? `<img src="${chosenUrl}" alt="${ag.name}" class="w-full h-full object-cover object-top ${autoFilterClass} transition-all duration-300" style="animation: obsPortraitPulse 5s ease-in-out infinite;" />`
+          : `<div class="w-full h-full flex items-center justify-center font-mono font-bold text-5xl text-white/90 ${autoFilterClass}"
+               style="background: radial-gradient(circle at 50% 30%, ${theme.glow}, #09090b 75%);">
+               ${initials}
+             </div>`;
+
+        const existingRoll = document.getElementById("obs-live-roll-slot")?.innerHTML || "";
+        const rollHtml = (!hideDiceParam && rollEvent)
+          ? `
+            <div class="obs-roll-banner mb-3 px-4 py-2.5 rounded-2xl bg-[#09090b]/95 border-2 shadow-2xl flex items-center justify-between gap-4 backdrop-blur-md"
+                 style="border-color: ${rollEvent.isCrit ? "#fbbf24" : rollEvent.isFumble ? "#f43f5e" : theme.primary}; box-shadow: 0 0 25px ${theme.glow};">
+              <div class="min-w-0">
+                <div class="text-[11px] font-bold uppercase tracking-wider text-zinc-300 truncate">${rollEvent.title}</div>
+                <div class="text-[11px] font-mono text-zinc-400 truncate">${rollEvent.detail}</div>
+              </div>
+              <div class="text-3xl font-mono font-black pl-3 border-l border-zinc-800"
+                   style="color: ${rollEvent.isCrit ? "#fde047" : rollEvent.isFumble ? "#fb7185" : theme.primary};">
+                ${rollEvent.result}
+              </div>
+            </div>
+          `
+          : existingRoll;
+
+        stage.innerHTML = `
+          <div class="w-[340px] flex flex-col items-stretch">
+            <div id="obs-live-roll-slot">${rollHtml}</div>
+
+            <div class="relative rounded-3xl overflow-hidden border-2 bg-[#09090b]/90 shadow-2xl backdrop-blur-md"
+                 style="border-color: ${theme.primary}; box-shadow: 0 12px 40px rgba(0,0,0,0.85), 0 0 24px ${theme.glow};">
+              
+              <!-- Portrait Frame -->
+              <div class="relative w-full ${layoutMode === "compact" ? "h-[240px]" : "h-[310px]"} overflow-hidden bg-black">
+                ${avatarVisual}
+                <div class="absolute inset-0 bg-gradient-to-t from-[#09090b] via-[#09090b]/25 to-transparent"></div>
+
+                <!-- Top Badges -->
+                <div class="absolute top-3 left-3 right-3 flex items-center justify-between gap-2">
+                  ${showNex ? `
+                    <span class="px-2.5 py-1 rounded-lg bg-black/75 border text-[11px] font-mono font-bold text-white backdrop-blur-sm"
+                          style="border-color: ${theme.primary};">
+                      NEX ${ag.nex || 5}%
+                    </span>` : `<span></span>`}
+
+                  ${statusLabel ? `
+                    <span class="px-2.5 py-1 rounded-lg bg-rose-600/90 text-white text-[10px] font-mono font-bold tracking-wider uppercase animate-pulse shadow-lg">
+                      ${statusLabel}
+                    </span>` : (ag.affinity && ag.affinity !== "Nenhuma" ? `
+                    <span class="px-2.5 py-1 rounded-lg bg-black/75 border border-zinc-700 text-[10px] font-mono font-semibold uppercase tracking-wider"
+                          style="color: ${theme.primary};">
+                      ${theme.badge}
+                    </span>` : "")}
+                </div>
+
+                <!-- Character Name & Class Overlay -->
+                ${showName ? `
+                  <div class="absolute bottom-2.5 left-4 right-4">
+                    <h1 class="text-xl font-extrabold text-white tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)] truncate">
+                      ${ag.name || "Agente"}
+                    </h1>
+                    <p class="text-[11px] font-mono text-zinc-300 truncate drop-shadow">
+                      ${ag.charClass || ""} • ${ag.path || ""}
+                    </p>
+                  </div>` : ""}
+              </div>
+
+              <!-- Vital Bars (PV / PE / SAN) -->
+              ${showBars ? `
+                <div class="p-3.5 pt-2.5 space-y-2 bg-[#09090b]/95 font-mono">
+                  <!-- PV -->
+                  <div>
+                    <div class="flex justify-between text-xs font-bold mb-0.5">
+                      <span class="text-rose-400">VIDA (PV)</span>
+                      <span class="text-white">${curPv} <span class="text-zinc-500">/ ${vitals.maxPv}</span></span>
+                    </div>
+                    <div class="w-full h-2.5 bg-zinc-900 rounded-full overflow-hidden border border-zinc-800">
+                      <div class="h-full bg-gradient-to-r from-rose-600 to-rose-400 transition-all duration-300" style="width:${pvPct}%"></div>
+                    </div>
+                  </div>
+
+                  <!-- PE & SAN -->
+                  <div class="grid grid-cols-2 gap-2.5">
+                    <div>
+                      <div class="flex justify-between text-[11px] font-bold mb-0.5">
+                        <span class="text-amber-300">ESFORÇO</span>
+                        <span class="text-white">${curPe}/${vitals.maxPe}</span>
+                      </div>
+                      <div class="w-full h-2 bg-zinc-900 rounded-full overflow-hidden border border-zinc-800">
+                        <div class="h-full bg-gradient-to-r from-amber-500 to-yellow-300 transition-all duration-300" style="width:${pePct}%"></div>
+                      </div>
+                    </div>
+                    <div>
+                      <div class="flex justify-between text-[11px] font-bold mb-0.5">
+                        <span class="text-sky-300">SANIDADE</span>
+                        <span class="text-white">${curSan}/${vitals.maxSan}</span>
+                      </div>
+                      <div class="w-full h-2 bg-zinc-900 rounded-full overflow-hidden border border-zinc-800">
+                        <div class="h-full bg-gradient-to-r from-sky-600 to-cyan-300 transition-all duration-300" style="width:${sanPct}%"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ` : ""}
+            </div>
+          </div>
+        `;
+
+        if (rollEvent) {
+          clearTimeout(lastRollTimeout);
+          lastRollTimeout = setTimeout(() => {
+            const slot = document.getElementById("obs-live-roll-slot");
+            if (slot) slot.innerHTML = "";
+          }, 4800);
+        }
+      }
+
+      function syncFromLocalStorage() {
+        try {
+          const raw = localStorage.getItem("op_agents_roster_v1");
+          if (!raw) return;
+          const roster = JSON.parse(raw);
+          const found = targetAgentId
+            ? roster.agents.find(a => a.id === targetAgentId)
+            : (roster.agents.find(a => a.id === roster.activeId) || roster.agents[0]);
+          if (found) {
+            currentObsAgent = found;
+            currentObsCfg = getObsSettingsMap()[found.id] || {};
+            renderObsOverlay();
+          }
+        } catch (e) {}
+      }
+
+      // Escuta atualizações instantâneas na mesma máquina (OBS Browser Source local)
+      if (obsChannel) {
+        obsChannel.onmessage = (ev) => {
+          const data = ev.data;
+          if (!data || data.type !== "OBS_PORTRAIT_UPDATE") return;
+          if (targetAgentId && data.agent?.id !== targetAgentId) return;
+          currentObsAgent = data.agent;
+          currentObsCfg = data.obsCfg || {};
+          renderObsOverlay(data.rollEvent || null);
+        };
+      }
+
+      window.addEventListener("storage", (e) => {
+        if (e.key === "op_agents_roster_v1" || e.key === OBS_CFG_KEY) {
+          syncFromLocalStorage();
+        }
+      });
+
+      // Se houver ?room=CODIGO&agent=ID, conecta direto ao Firestore da sala
+      if (targetRoomCode && targetAgentId) {
+        try {
+          const app = getApps().length ? getApps()[0] : initializeApp(OBS_FIRE_CONFIG);
+          const obsDb = getFirestore(app);
+          onSnapshot(doc(obsDb, "sessions", targetRoomCode, "agents", targetAgentId), (snap) => {
+            if (snap.exists()) {
+              currentObsAgent = snap.data();
+              currentObsCfg = currentObsAgent.obsPortraitCfg || getObsSettingsMap()[targetAgentId] || {};
+              renderObsOverlay();
+            }
+          });
+        } catch (err) {
+          console.error("[OBS Portrait] Erro Firestore:", err);
+        }
+      }
+
+      syncFromLocalStorage();
+    }
+
+    // ==================== 2. MODO NORMAL DA FICHA: PAINEL DE CONFIGURAÇÃO DO OBS ====================
+    if (!isObsMode) {
+      // Intercepta localStorage.setItem para transmitir mudanças de PV/PE/SAN/NEX para o OBS
+      const prevSetItem = localStorage.setItem.bind(localStorage);
+      localStorage.setItem = function (key, value) {
+        prevSetItem(key, value);
+        if (key === "op_agents_roster_v1") {
+          broadcastObsSnapshot();
+        }
+      };
+
+      // Observa toasts de rolagem para enviar ao vivo para o Portrait do OBS
+      function attachObsRollListener() {
+        const toastBox = document.getElementById("toast-container");
+        if (!toastBox) return;
+        const obsRollWatcher = new MutationObserver((mutations) => {
+          mutations.forEach((m) => {
+            m.addedNodes.forEach((node) => {
+              if (node.nodeType === 1) {
+                const title = node.querySelector("span.text-xs.font-semibold")?.textContent?.trim() || "Teste";
+                const detail = node.querySelector("p.text-xs.font-mono")?.textContent?.trim() || "";
+                const result = node.querySelector("div.text-2xl.font-mono")?.textContent?.trim() || "";
+                const isCrit = node.classList.contains("border-amber-400");
+                const isFumble = node.classList.contains("border-rose-500");
+                if (result) {
+                  broadcastObsSnapshot({ title, detail, result, isCrit, isFumble });
+                }
+              }
+            });
+          });
+        });
+        obsRollWatcher.observe(toastBox, { childList: true });
+      }
+
+      function injectObsPortraitButtonAndModal() {
+        const topBarRight = document.querySelector("body > div:first-child .max-w-7xl > div:last-child");
+        if (topBarRight && !document.getElementById("btn-open-obs-modal")) {
+          const btn = document.createElement("button");
+          btn.id = "btn-open-obs-modal";
+          btn.type = "button";
+          btn.className = "px-2.5 py-1 rounded-md bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-sky-200 font-semibold transition flex items-center gap-1.5";
+          btn.innerHTML = `<span>🎥</span> <span class="hidden md:inline">OBS Portrait</span>`;
+          topBarRight.prepend(btn);
+        }
+
+        if (!document.getElementById("modal-obs-portrait")) {
+          const modal = document.createElement("div");
+          modal.id = "modal-obs-portrait";
+          modal.className = "fixed inset-0 bg-black/85 backdrop-blur-sm z-50 hidden items-center justify-center p-4";
+          modal.innerHTML = `
+            <div class="bg-[#111114] border border-[#26262e] rounded-2xl max-w-3xl w-full p-6 flex flex-col max-h-[92vh] space-y-4 shadow-2xl">
+              <div class="flex items-center justify-between border-b border-[#26262e] pb-3">
+                <div class="flex items-center gap-2.5">
+                  <span class="text-xl">🎥</span>
+                  <div>
+                    <h3 class="text-base font-bold text-white">Portrait Dinâmico para OBS Studio</h3>
+                    <p class="text-xs text-zinc-400">Overlay transparente com PV, PE, SAN, estados de dano e rolagens ao vivo</p>
+                  </div>
+                </div>
+                <button type="button" id="btn-close-obs-modal" class="text-zinc-400 hover:text-white text-lg px-2">✕</button>
+              </div>
+              <div id="obs-modal-content" class="overflow-y-auto flex-1 pr-1 space-y-4"></div>
+            </div>
+          `;
+          document.body.appendChild(modal);
+        }
+      }
+
+      function buildObsUrl(agentId) {
+        const baseUrl = window.location.href.split("?")[0].split("#")[0];
+        let sessionMeta = {};
+        try {
+          sessionMeta = JSON.parse(localStorage.getItem("op_multiplayer_session_v1") || "{}");
+        } catch (e) {}
+
+        const params = new URLSearchParams();
+        params.set("obs", "1");
+        if (agentId) params.set("agent", agentId);
+        if (sessionMeta.roomCode) params.set("room", sessionMeta.roomCode);
+        return `${baseUrl}?${params.toString()}`;
+      }
+
+      function renderObsConfigModal() {
+        const container = document.getElementById("obs-modal-content");
+        if (!container) return;
+
+        const ag = getActiveRosterAgent();
+        if (!ag) {
+          container.innerHTML = `<p class="text-xs text-zinc-400">Selecione ou crie um agente primeiro.</p>`;
+          return;
+        }
+
+        const cfg = getObsSettingsMap()[ag.id] || {};
+        const obsUrl = buildObsUrl(ag.id);
+
+        container.innerHTML = `
+          <!-- Link para o OBS Studio -->
+          <div class="bg-[#09090b] border border-sky-500/40 rounded-2xl p-4 space-y-2.5">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-sky-300 uppercase tracking-wider">1. Link para Fonte de Navegador (Browser Source) no OBS</span>
+              <span class="text-[11px] font-mono text-zinc-400">Agente: <strong class="text-white">${ag.name}</strong></span>
+            </div>
+            <div class="flex gap-2">
+              <input type="text" id="obs-generated-url" readonly value="${obsUrl}"
+                class="flex-1 bg-[#111114] border border-[#26262e] rounded-xl px-3 py-2 text-xs font-mono text-zinc-200 outline-none" />
+              <button type="button" id="btn-copy-obs-url" class="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold transition shrink-0">
+                📋 Copiar Link OBS
+              </button>
+              <a href="${obsUrl}" target="_blank" class="px-3 py-2 rounded-xl bg-[#18181d] hover:bg-zinc-800 border border-[#26262e] text-xs text-zinc-200 font-medium transition shrink-0">
+                ↗ Testar
+              </a>
+            </div>
+            <p class="text-[11px] text-zinc-400">
+              No OBS Studio: <strong>Fontes (+) → Navegador</strong> → Cole o link acima → Largura: <code class="text-zinc-200">400</code>, Altura: <code class="text-zinc-200">520</code>. O fundo já é 100% transparente!
+            </p>
+          </div>
+
+          <!-- Imagens do Portrait por Estado -->
+          <div class="bg-[#09090b] border border-[#26262e] rounded-2xl p-4 space-y-3">
+            <span class="block text-xs font-bold text-white uppercase tracking-wider">2. Imagens do Personagem (URL ou Arquivo PNG Transparente)</span>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+              <div>
+                <label class="block text-zinc-400 mb-1">Portrait Padrão (Normal)</label>
+                <div class="flex gap-1.5">
+                  <input type="text" id="obs-input-normal" value="${cfg.avatarNormal || ""}" placeholder="https://... ou envie PNG →"
+                    class="flex-1 bg-[#111114] border border-[#26262e] rounded-xl px-3 py-2 text-white outline-none" />
+                  <label class="px-2.5 py-2 rounded-xl bg-[#18181d] hover:bg-zinc-800 border border-[#26262e] text-zinc-300 cursor-pointer shrink-0">
+                    📁 <input type="file" accept="image/*" data-obs-file="avatarNormal" class="hidden" />
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-rose-300 mb-1">Portrait Machucado (≤ 50% PV) <span class="text-zinc-500">(opcional)</span></label>
+                <div class="flex gap-1.5">
+                  <input type="text" id="obs-input-hurt" value="${cfg.avatarHurt || ""}" placeholder="Se vazio, aplica filtro vermelho automático"
+                    class="flex-1 bg-[#111114] border border-[#26262e] rounded-xl px-3 py-2 text-white outline-none" />
+                  <label class="px-2.5 py-2 rounded-xl bg-[#18181d] hover:bg-zinc-800 border border-[#26262e] text-zinc-300 cursor-pointer shrink-0">
+                    📁 <input type="file" accept="image/*" data-obs-file="avatarHurt" class="hidden" />
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-sky-300 mb-1">Portrait Perturbado / Enlouquecendo <span class="text-zinc-500">(opcional)</span></label>
+                <div class="flex gap-1.5">
+                  <input type="text" id="obs-input-insane" value="${cfg.avatarInsane || ""}" placeholder="Se vazio, aplica aura mental automática"
+                    class="flex-1 bg-[#111114] border border-[#26262e] rounded-xl px-3 py-2 text-white outline-none" />
+                  <label class="px-2.5 py-2 rounded-xl bg-[#18181d] hover:bg-zinc-800 border border-[#26262e] text-zinc-300 cursor-pointer shrink-0">
+                    📁 <input type="file" accept="image/*" data-obs-file="avatarInsane" class="hidden" />
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-zinc-400 mb-1">Portrait Morrendo (0 PV) <span class="text-zinc-500">(opcional)</span></label>
+                <div class="flex gap-1.5">
+                  <input type="text" id="obs-input-dying" value="${cfg.avatarDying || ""}" placeholder="Se vazio, aplica filtro P&B dramático"
+                    class="flex-1 bg-[#111114] border border-[#26262e] rounded-xl px-3 py-2 text-white outline-none" />
+                  <label class="px-2.5 py-2 rounded-xl bg-[#18181d] hover:bg-zinc-800 border border-[#26262e] text-zinc-300 cursor-pointer shrink-0">
+                    📁 <input type="file" accept="image/*" data-obs-file="avatarDying" class="hidden" />
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Opções de Exibição -->
+            <div class="flex flex-wrap items-center gap-5 pt-2 border-t border-[#26262e] text-xs text-zinc-300">
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" id="obs-chk-bars" ${cfg.showBars !== false ? "checked" : ""} />
+                <span>Mostrar Barras (PV / PE / SAN)</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" id="obs-chk-name" ${cfg.showName !== false ? "checked" : ""} />
+                <span>Mostrar Nome & Classe</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" id="obs-chk-nex" ${cfg.showNex !== false ? "checked" : ""} />
+                <span>Mostrar Selo de NEX</span>
+              </label>
+            </div>
+
+            <div class="flex justify-end pt-1">
+              <button type="button" id="btn-save-obs-cfg" class="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold transition">
+                Salvar & Atualizar OBS
+              </button>
+            </div>
+          </div>
+        `;
+      }
+
+      document.addEventListener("click", (e) => {
+        const btn = e.target.closest("button");
+        if (!btn) return;
+
+        if (btn.id === "btn-open-obs-modal") {
+          renderObsConfigModal();
+          const modal = document.getElementById("modal-obs-portrait");
+          modal.classList.remove("hidden");
+          modal.classList.add("flex");
+        } else if (btn.id === "btn-close-obs-modal") {
+          const modal = document.getElementById("modal-obs-portrait");
+          modal.classList.add("hidden");
+          modal.classList.remove("flex");
+        } else if (btn.id === "btn-copy-obs-url") {
+          const inp = document.getElementById("obs-generated-url");
+          inp.select();
+          document.execCommand("copy");
+          btn.textContent = "✓ Copiado!";
+          setTimeout(() => { btn.textContent = "📋 Copiar Link OBS"; }, 2000);
+        } else if (btn.id === "btn-save-obs-cfg") {
+          const ag = getActiveRosterAgent();
+          if (!ag) return;
+          saveObsSettingsForAgent(ag.id, {
+            avatarNormal: document.getElementById("obs-input-normal").value.trim(),
+            avatarHurt: document.getElementById("obs-input-hurt").value.trim(),
+            avatarInsane: document.getElementById("obs-input-insane").value.trim(),
+            avatarDying: document.getElementById("obs-input-dying").value.trim(),
+            showBars: document.getElementById("obs-chk-bars").checked,
+            showName: document.getElementById("obs-chk-name").checked,
+            showNex: document.getElementById("obs-chk-nex").checked
+          });
+          btn.textContent = "✓ Atualizado no OBS!";
+          setTimeout(() => { btn.textContent = "Salvar & Atualizar OBS"; }, 1800);
+        }
+      });
+
+      document.addEventListener("change", (e) => {
+        const fileInput = e.target;
+        if (fileInput && fileInput.dataset && fileInput.dataset.obsFile && fileInput.files[0]) {
+          const fieldKey = fileInput.dataset.obsFile;
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            const ag = getActiveRosterAgent();
+            if (!ag) return;
+            saveObsSettingsForAgent(ag.id, { [fieldKey]: ev.target.result });
+            renderObsConfigModal();
+          };
+          reader.readAsDataURL(fileInput.files[0]);
+        }
+      });
+
+      function initObsControls() {
+        injectObsPortraitButtonAndModal();
+        attachObsRollListener();
+        setInterval(() => {
+          if (!document.getElementById("btn-open-obs-modal")) {
+            injectObsPortraitButtonAndModal();
+          }
+        }, 1500);
+      }
+
+      if (document.readyState === "loading") {
+        window.addEventListener("DOMContentLoaded", initObsControls);
+      } else {
+        initObsControls();
+      }
+    }
+  </script>
 </body>
 </html>
