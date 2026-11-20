@@ -4977,9 +4977,9 @@
     }
   </script>
 
-  <!-- ==================== OBS STUDIO STREAM PORTRAIT SYSTEM (STANDALONE & ANALOG DOSSIER) ==================== -->
+  <!-- ==================== OBS STUDIO STREAM PORTRAIT SYSTEM (MULTI-SKINS) ==================== -->
   <style id="obs-portrait-styles">
-    @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Special+Elite&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Cinzel:wght@600;700;800&family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&family=Special+Elite&display=swap');
 
     html.obs-stream-mode,
     html.obs-stream-mode body {
@@ -4993,25 +4993,25 @@
       display: none !important;
     }
 
-    .obs-font-stamp {
-      font-family: 'Special Elite', 'Courier Prime', monospace;
-    }
-    .obs-font-typewriter {
-      font-family: 'Courier Prime', monospace;
-    }
+    /* Tipografias das Skins */
+    .obs-font-stamp { font-family: 'Special Elite', 'Courier Prime', monospace; }
+    .obs-font-typewriter { font-family: 'Courier Prime', monospace; }
+    .obs-font-cris { font-family: 'JetBrains Mono', monospace; }
+    .obs-font-ritual { font-family: 'Cinzel', serif; }
+    .obs-font-clean { font-family: 'Inter', sans-serif; }
 
     @keyframes obsNoteAppear {
-      0% { opacity: 0; transform: translateY(14px) rotate(-1.5deg); }
-      14% { opacity: 1; transform: translateY(0) rotate(-0.8deg); }
-      86% { opacity: 1; transform: translateY(0) rotate(-0.8deg); }
-      100% { opacity: 0; transform: translateY(-8px) rotate(-1.2deg); }
+      0% { opacity: 0; transform: translateY(14px) scale(0.96); }
+      14% { opacity: 1; transform: translateY(0) scale(1); }
+      86% { opacity: 1; transform: translateY(0) scale(1); }
+      100% { opacity: 0; transform: translateY(-8px) scale(0.98); }
     }
     .obs-roll-note {
       animation: obsNoteAppear 4.8s ease-out forwards;
     }
 
-    /* Textura sutil de papel fotográfico e dossiê */
-    .obs-paper-card {
+    /* ========== SKIN 1: DOSSIÊ ANALÓGICO ========== */
+    .skin-dossier-card {
       background-color: #f3ede2;
       background-image:
         radial-gradient(rgba(68, 56, 42, 0.06) 1px, transparent 0),
@@ -5020,16 +5020,15 @@
       color: #1f1b18;
       box-shadow: 0 12px 28px rgba(0, 0, 0, 0.65), 0 2px 6px rgba(0, 0, 0, 0.45);
       border: 1px solid #cfc3b0;
+      border-radius: 3px;
     }
-
-    .obs-polaroid-frame {
+    .skin-dossier-photo-frame {
       background: #faf7f2;
-      padding: 7px 7px 22px 7px;
+      padding: 6px 6px 20px 6px;
       border: 1px solid #d6cbb9;
       box-shadow: 0 6px 16px rgba(20, 15, 10, 0.35);
       transform: rotate(-1.8deg);
     }
-
     .obs-tape-strip {
       background: rgba(235, 224, 198, 0.72);
       border-left: 1px dashed rgba(140, 125, 100, 0.35);
@@ -5037,18 +5036,71 @@
       box-shadow: 0 1px 3px rgba(0,0,0,0.18);
     }
 
-    .obs-hurt-filter {
-      filter: sepia(0.28) contrast(1.14) saturate(1.25);
+    /* ========== SKIN 2: TERMINAL C.R.I.S. (TÁTICO) ========== */
+    .skin-cris-card {
+      background: linear-gradient(135deg, rgba(12, 13, 18, 0.94) 0%, rgba(20, 22, 30, 0.92) 100%);
+      border: 1px solid rgba(168, 85, 247, 0.45);
+      box-shadow: 0 14px 34px rgba(0, 0, 0, 0.78), inset 0 0 24px rgba(168, 85, 247, 0.08);
+      color: #f4f4f5;
+      border-radius: 10px;
+      backdrop-filter: blur(8px);
+      position: relative;
     }
-    .obs-mad-filter {
-      filter: sepia(0.45) contrast(1.22) brightness(0.92);
+    .skin-cris-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(0deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 1px, transparent 1px, transparent 3px);
+      pointer-events: none;
+      border-radius: 10px;
     }
-    .obs-dying-filter {
-      filter: grayscale(1) contrast(1.3) brightness(0.75);
+    .skin-cris-photo-frame {
+      background: #09090b;
+      padding: 3px;
+      border: 1px solid rgba(168, 85, 247, 0.55);
+      border-radius: 8px;
+      box-shadow: 0 0 15px rgba(168, 85, 247, 0.2);
     }
+
+    /* ========== SKIN 3: GRIMÓRIO & SANGUE (OCULTISMO) ========== */
+    .skin-ritual-card {
+      background: radial-gradient(circle at top right, #231115 0%, #0d080a 75%);
+      border: 1.5px solid #7f1d1d;
+      box-shadow: 0 14px 32px rgba(0, 0, 0, 0.85), inset 0 0 28px rgba(153, 27, 27, 0.25);
+      color: #f5ebe0;
+      border-radius: 6px;
+    }
+    .skin-ritual-photo-frame {
+      background: #14090b;
+      padding: 4px;
+      border: 1.5px solid #b45309;
+      box-shadow: 0 0 18px rgba(180, 83, 9, 0.25);
+      border-radius: 4px;
+    }
+
+    /* ========== SKIN 4: STREAM CLEAN (MINIMALISTA MODERNO) ========== */
+    .skin-clean-card {
+      background: rgba(15, 16, 20, 0.86);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.65);
+      color: #ffffff;
+      border-radius: 16px;
+      backdrop-filter: blur(10px);
+    }
+    .skin-clean-photo-frame {
+      background: #18181b;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+    }
+
+    /* Filtros de Estado Vital */
+    .obs-hurt-filter { filter: sepia(0.28) contrast(1.14) saturate(1.25); }
+    .obs-mad-filter { filter: sepia(0.45) contrast(1.22) brightness(0.92); }
+    .obs-dying-filter { filter: grayscale(1) contrast(1.3) brightness(0.75); }
   </style>
 
- <script type="module">
+  <script type="module">
     import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import {
@@ -5072,13 +5124,100 @@
     const OBS_CFG_KEY = "op_obs_portrait_settings_v1";
     const obsChannel = typeof BroadcastChannel !== "undefined" ? new BroadcastChannel("ordo_obs_portrait_bus") : null;
 
-    const ELEMENT_INK_PALETTE = {
-      Nenhuma: { ink: "#2c2520", barPv: "#991b1b", barPe: "#b45309", barSan: "#1e40af", stamp: "#3f362f" },
-      Sangue: { ink: "#7f1d1d", barPv: "#991b1b", barPe: "#9a3412", barSan: "#1e3a8a", stamp: "#991b1b" },
-      Morte: { ink: "#1c1917", barPv: "#7f1d1d", barPe: "#78350f", barSan: "#1e3a8a", stamp: "#292524" },
-      Conhecimento: { ink: "#78350f", barPv: "#991b1b", barPe: "#b45309", barSan: "#1d4ed8", stamp: "#92400e" },
-      Energia: { ink: "#4c1d95", barPv: "#991b1b", barPe: "#6d28d9", barSan: "#1e40af", stamp: "#5b21b6" },
-      Medo: { ink: "#1e3a8a", barPv: "#881337", barPe: "#92400e", barSan: "#1e3a8a", stamp: "#1e3a8a" }
+    // Definição completa das 4 Skins disponíveis
+    const OBS_SKINS = {
+      dossier: {
+        id: "dossier",
+        name: "🗂 Dossiê Analógico",
+        desc: "Papel envelhecido, Polaroid com fita adesiva e carimbo de máquina.",
+        cardClass: "skin-dossier-card",
+        photoFrameClass: "skin-dossier-photo-frame",
+        titleFont: "obs-font-stamp",
+        monoFont: "obs-font-typewriter",
+        titleColor: "#1c1815",
+        subTextColor: "#574b40",
+        dividerClass: "border-b border-dashed border-[#bfb29e]",
+        barTrackClass: "bg-[#dfd5c5] border border-[#a89984] p-[1px]",
+        pvLabelColor: "#7f1d1d",
+        peLabelColor: "#92400e",
+        sanLabelColor: "#1e3a8a",
+        pvBar: "#991b1b",
+        peBar: "#b45309",
+        sanBar: "#1e40af",
+        stampBoxClass: "border-2 border-[#991b1b] text-[#991b1b] bg-[#f3ede2]/95 -rotate-2",
+        rollCardClass: "skin-dossier-card border-2 border-[#8b7d6b]",
+        hasTape: true,
+        nexInsidePolaroid: true
+      },
+      cris: {
+        id: "cris",
+        name: "📡 Terminal C.R.I.S.",
+        desc: "Interface tática escura da Ordo Realitas com scanlines e HUD neon.",
+        cardClass: "skin-cris-card",
+        photoFrameClass: "skin-cris-photo-frame",
+        titleFont: "obs-font-cris font-bold tracking-tight",
+        monoFont: "obs-font-cris",
+        titleColor: "#ffffff",
+        subTextColor: "#a1a1aa",
+        dividerClass: "border-b border-purple-500/30",
+        barTrackClass: "bg-black/70 border border-zinc-700/80 rounded-sm overflow-hidden",
+        pvLabelColor: "#f87171",
+        peLabelColor: "#fbbf24",
+        sanLabelColor: "#38bdf8",
+        pvBar: "#ef4444",
+        peBar: "#f59e0b",
+        sanBar: "#0ea5e9",
+        stampBoxClass: "border border-rose-500 bg-rose-950/90 text-rose-300 rounded px-2",
+        rollCardClass: "skin-cris-card border border-purple-400/70",
+        hasTape: false,
+        nexInsidePolaroid: false
+      },
+      ritual: {
+        id: "ritual",
+        name: "🩸 Grimório & Sangue",
+        desc: "Estética ocultista sombria com bordas carmesim e dourado ritualístico.",
+        cardClass: "skin-ritual-card",
+        photoFrameClass: "skin-ritual-photo-frame",
+        titleFont: "obs-font-ritual font-bold tracking-wide",
+        monoFont: "obs-font-cris",
+        titleColor: "#fef3c7",
+        subTextColor: "#d6b89c",
+        dividerClass: "border-b border-amber-600/35",
+        barTrackClass: "bg-[#1a0b0e] border border-[#5c1922] p-[1px]",
+        pvLabelColor: "#fca5a5",
+        peLabelColor: "#fcd34d",
+        sanLabelColor: "#93c5fd",
+        pvBar: "#dc2626",
+        peBar: "#d97706",
+        sanBar: "#2563eb",
+        stampBoxClass: "border border-amber-400 bg-[#2b090e] text-amber-300 uppercase tracking-widest",
+        rollCardClass: "skin-ritual-card border-2 border-amber-500/70",
+        hasTape: false,
+        nexInsidePolaroid: false
+      },
+      clean: {
+        id: "clean",
+        name: "✨ Stream Clean",
+        desc: "Overlay moderno translúcido sem ruído visual, ideal para qualquer layout.",
+        cardClass: "skin-clean-card",
+        photoFrameClass: "skin-clean-photo-frame",
+        titleFont: "obs-font-clean font-extrabold tracking-tight",
+        monoFont: "obs-font-clean font-semibold",
+        titleColor: "#ffffff",
+        subTextColor: "#a1a1aa",
+        dividerClass: "border-b border-white/10",
+        barTrackClass: "bg-white/10 rounded-full overflow-hidden",
+        pvLabelColor: "#fb7185",
+        peLabelColor: "#fbbf24",
+        sanLabelColor: "#38bdf8",
+        pvBar: "#f43f5e",
+        peBar: "#eab308",
+        sanBar: "#0ea5e9",
+        stampBoxClass: "bg-rose-600 text-white rounded-full px-2.5",
+        rollCardClass: "skin-clean-card border border-white/25",
+        hasTape: false,
+        nexInsidePolaroid: false
+      }
     };
 
     const obsApp = getApps().find(a => a.name === "obs-portrait-app")
@@ -5211,7 +5350,8 @@
           imgd: isHttpUrl(cfg.avatarDying) ? cfg.avatarDying.trim() : "",
           sb: cfg.showBars !== false ? 1 : 0,
           sn: cfg.showName !== false ? 1 : 0,
-          sx: cfg.showNex !== false ? 1 : 0
+          sx: cfg.showNex !== false ? 1 : 0,
+          sk: cfg.skin || "dossier"
         };
         const json = JSON.stringify(compact);
         return btoa(unescape(encodeURIComponent(json)));
@@ -5247,7 +5387,8 @@
             avatarDying: d.imgd || "",
             showBars: d.sb !== 0,
             showName: d.sn !== 0,
-            showNex: d.sx !== 0
+            showNex: d.sx !== 0,
+            skin: d.sk || "dossier"
           }
         };
       } catch (e) {
@@ -5352,6 +5493,7 @@
       const targetAgentId = urlParams.get("agent") || null;
       const targetRoomCode = (urlParams.get("room") || "").trim().toUpperCase();
       const layoutMode = urlParams.get("layout") || "webcam";
+      const forcedSkinParam = urlParams.get("skin") || null;
       const hideBarsParam = urlParams.get("bars") === "0";
       const hideDiceParam = urlParams.get("dice") === "0";
       const embeddedData = decodeStandalonePayload(urlParams.get("d"));
@@ -5370,17 +5512,22 @@
       let lastRenderedHash = "";
       let activeRollHtml = "";
 
+      function getActiveSkin(cfg) {
+        const key = forcedSkinParam || cfg?.skin || "dossier";
+        return OBS_SKINS[key] || OBS_SKINS.dossier;
+      }
+
       function showObsDiagnostic(msg) {
         if (currentObsAgent) return;
         stage.innerHTML = `
-          <div class="obs-paper-card p-4 rounded-sm max-w-md obs-font-typewriter text-xs space-y-1">
+          <div class="skin-dossier-card p-4 max-w-md obs-font-typewriter text-xs space-y-1">
             <div class="obs-font-stamp font-bold text-sm text-[#7f1d1d]">AGUARDANDO SINAL DA FICHA...</div>
             <p class="text-[#3b3129]">${msg}</p>
           </div>
         `;
       }
 
-      function triggerObsRollPopup(rollEvent, inkColor) {
+      function triggerObsRollPopup(rollEvent, skin) {
         if (hideDiceParam || !rollEvent || !rollEvent.result) return;
         const uniqueId = String(rollEvent.rollId || `${rollEvent.title}|${rollEvent.result}`);
         if (shownRollIds.has(uniqueId)) return;
@@ -5390,14 +5537,16 @@
           shownRollIds.delete(firstKey);
         }
 
+        const resultColor = rollEvent.isCrit ? "#f59e0b" : rollEvent.isFumble ? "#ef4444" : skin.titleColor;
+
         activeRollHtml = `
-          <div class="obs-roll-note mb-3 px-4 py-2.5 rounded-sm obs-paper-card border-2 border-[#8b7d6b] flex items-center justify-between gap-3">
+          <div class="obs-roll-note mb-3 px-4 py-2.5 ${skin.rollCardClass} flex items-center justify-between gap-3">
             <div class="min-w-0">
-              <div class="text-[11px] obs-font-stamp uppercase tracking-wide text-[#2b231d] truncate">${rollEvent.title}</div>
-              <div class="text-[11px] obs-font-typewriter text-[#574b40] truncate">${rollEvent.detail}</div>
+              <div class="text-[11px] ${skin.titleFont} uppercase tracking-wide truncate" style="color:${skin.titleColor}">${rollEvent.title}</div>
+              <div class="text-[11px] ${skin.monoFont} truncate" style="color:${skin.subTextColor}">${rollEvent.detail}</div>
             </div>
-            <div class="text-3xl obs-font-stamp font-bold pl-3 border-l-2 border-dashed border-[#b5a692]"
-                 style="color: ${rollEvent.isCrit ? "#b45309" : rollEvent.isFumble ? "#991b1b" : inkColor};">
+            <div class="text-3xl ${skin.titleFont} font-bold pl-3 border-l border-dashed border-current/30"
+                 style="color: ${resultColor};">
               ${rollEvent.result}
             </div>
           </div>
@@ -5419,14 +5568,15 @@
 
         const ag = currentObsAgent;
         const cfg = currentObsCfg || {};
+        const skin = getActiveSkin(cfg);
         const vitals = computeObsAgentVitals(ag);
-        const palette = ELEMENT_INK_PALETTE[ag.affinity] || ELEMENT_INK_PALETTE.Nenhuma;
 
         const curPv = ag.currentPv ?? vitals.maxPv;
         const curPe = ag.currentPe ?? vitals.maxPe;
         const curSan = ag.currentSan ?? vitals.maxSan;
 
         const stateHash = JSON.stringify({
+          sk: skin.id,
           n: ag.name, x: ag.nex, a: ag.affinity,
           pv: curPv, mpv: vitals.maxPv,
           pe: curPe, mpe: vitals.maxPe,
@@ -5436,9 +5586,8 @@
           sb: cfg.showBars, sn: cfg.showName, sx: cfg.showNex
         });
 
-        // Se só chegou uma rolagem nova e a ficha não mudou, atualiza SÓ o balão sem re-renderizar o card inteiro
         if (!force && stateHash === lastRenderedHash) {
-          if (rollEvent) triggerObsRollPopup(rollEvent, palette.ink);
+          if (rollEvent) triggerObsRollPopup(rollEvent, skin);
           return;
         }
         lastRenderedHash = stateHash;
@@ -5483,7 +5632,7 @@
         if (layoutMode === "webcam") {
           const photoHtml = chosenUrl
             ? `<img src="${chosenUrl}" alt="${ag.name}" class="w-full h-full object-cover object-top transition-all duration-300 ${autoFilterClass}" />`
-            : `<div class="w-full h-full flex flex-col items-center justify-center obs-font-stamp text-3xl text-[#3b3129] bg-[#e5dccb] ${autoFilterClass}">
+            : `<div class="w-full h-full flex flex-col items-center justify-center ${skin.titleFont} text-3xl ${autoFilterClass}" style="color:${skin.subTextColor}">
                  <span>${initials}</span>
                </div>`;
 
@@ -5491,71 +5640,77 @@
             <div class="w-[500px] max-w-full flex flex-col items-stretch">
               <div id="obs-live-roll-slot">${activeRollHtml}</div>
 
-              <div class="relative flex items-center gap-4 p-3.5 pt-4 rounded-sm obs-paper-card">
-                <div class="obs-tape-strip absolute -top-2.5 left-10 w-20 h-4 -rotate-2"></div>
-                <div class="obs-tape-strip absolute -top-2 right-12 w-16 h-4 rotate-1"></div>
+              <div class="relative flex items-center gap-4 p-3.5 pt-4 ${skin.cardClass}">
+                ${skin.hasTape ? `
+                  <div class="obs-tape-strip absolute -top-2.5 left-10 w-20 h-4 -rotate-2"></div>
+                  <div class="obs-tape-strip absolute -top-2 right-12 w-16 h-4 rotate-1"></div>
+                ` : ""}
 
-                <div class="obs-polaroid-frame w-28 h-32 shrink-0 relative">
-                  <div class="w-full h-full overflow-hidden bg-[#d8cebe] border border-[#c2b59f]">
+                <div class="${skin.photoFrameClass} w-28 h-32 shrink-0 relative">
+                  <div class="w-full h-full overflow-hidden rounded-[inherit]">
                     ${photoHtml}
                   </div>
-                  ${showNex ? `
-                    <span class="absolute bottom-1 left-2 right-2 text-center text-[10px] obs-font-typewriter font-bold tracking-wider text-[#4a3f35]">
+                  ${showNex && skin.nexInsidePolaroid ? `
+                    <span class="absolute bottom-1 left-2 right-2 text-center text-[10px] ${skin.monoFont} font-bold tracking-wider" style="color:${skin.subTextColor}">
                       NEX ${ag.nex || 5}%
                     </span>` : ""}
                 </div>
 
                 <div class="flex-1 min-w-0 flex flex-col justify-between gap-2.5">
-                  <div class="flex items-start justify-between gap-2 border-b border-dashed border-[#bfb29e] pb-1.5">
+                  <div class="flex items-start justify-between gap-2 ${skin.dividerClass} pb-1.5">
                     <div class="min-w-0">
                       ${showName ? `
-                        <h1 class="text-xl obs-font-stamp font-bold text-[#1c1815] tracking-tight truncate leading-tight">
+                        <h1 class="text-xl ${skin.titleFont} truncate leading-tight" style="color:${skin.titleColor}">
                           ${ag.name || "Agente"}
                         </h1>` : ""}
+                      ${showNex && !skin.nexInsidePolaroid ? `
+                        <span class="text-[11px] ${skin.monoFont} font-bold tracking-wider block mt-0.5" style="color:${skin.subTextColor}">
+                          ${ag.charClass ? `${ag.charClass} • ` : ""}NEX ${ag.nex || 5}%
+                        </span>` : ""}
                     </div>
 
                     ${statusStamp ? `
-                      <span class="px-2 py-0.5 border-2 border-[#991b1b] text-[#991b1b] text-[10px] obs-font-stamp font-bold uppercase tracking-wider -rotate-2 shrink-0">
+                      <span class="px-2 py-0.5 text-[10px] ${skin.titleFont} font-bold uppercase tracking-wider shrink-0 ${skin.stampBoxClass}">
                         ${statusStamp}
                       </span>` : ""}
                   </div>
 
                   ${showBars ? `
-                    <div class="space-y-2 obs-font-typewriter">
+                    <div class="space-y-2 ${skin.monoFont}">
                       <div>
                         <div class="flex items-baseline justify-between text-xs mb-0.5">
-                          <span class="font-bold text-[#7f1d1d] tracking-wider">VITALIDADE (PV)</span>
-                          <span class="text-base font-bold text-[#1c1815]">
-                            ${curPv}<span class="text-xs font-normal text-[#635649]">/${vitals.maxPv}</span>
+                          <span class="font-bold tracking-wider" style="color:${skin.pvLabelColor}">VITALIDADE (PV)</span>
+                          <span class="text-base font-bold" style="color:${skin.titleColor}">
+                            ${curPv}<span class="text-xs font-normal" style="color:${skin.subTextColor}">/${vitals.maxPv}</span>
                           </span>
                         </div>
-                        <div class="w-full h-3 bg-[#dfd5c5] border border-[#a89984] p-[1px]">
-                          <div class="h-full transition-all duration-300" style="width:${pvPct}%; background-color:${palette.barPv};"></div>
+                        <div class="w-full h-3 ${skin.barTrackClass}">
+                          <div class="h-full transition-all duration-300" style="width:${pvPct}%; background-color:${skin.pvBar};"></div>
                         </div>
                       </div>
 
                       <div class="grid grid-cols-2 gap-3">
                         <div>
                           <div class="flex items-baseline justify-between text-xs mb-0.5">
-                            <span class="font-bold text-[#92400e]">ESFORÇO</span>
-                            <span class="text-sm font-bold text-[#1c1815]">
-                              ${curPe}<span class="text-[11px] font-normal text-[#635649]">/${vitals.maxPe}</span>
+                            <span class="font-bold" style="color:${skin.peLabelColor}">ESFORÇO</span>
+                            <span class="text-sm font-bold" style="color:${skin.titleColor}">
+                              ${curPe}<span class="text-[11px] font-normal" style="color:${skin.subTextColor}">/${vitals.maxPe}</span>
                             </span>
                           </div>
-                          <div class="w-full h-2.5 bg-[#dfd5c5] border border-[#a89984] p-[1px]">
-                            <div class="h-full transition-all duration-300" style="width:${pePct}%; background-color:${palette.barPe};"></div>
+                          <div class="w-full h-2.5 ${skin.barTrackClass}">
+                            <div class="h-full transition-all duration-300" style="width:${pePct}%; background-color:${skin.peBar};"></div>
                           </div>
                         </div>
 
                         <div>
                           <div class="flex items-baseline justify-between text-xs mb-0.5">
-                            <span class="font-bold text-[#1e3a8a]">SANIDADE</span>
-                            <span class="text-sm font-bold text-[#1c1815]">
-                              ${curSan}<span class="text-[11px] font-normal text-[#635649]">/${vitals.maxSan}</span>
+                            <span class="font-bold" style="color:${skin.sanLabelColor}">SANIDADE</span>
+                            <span class="text-sm font-bold" style="color:${skin.titleColor}">
+                              ${curSan}<span class="text-[11px] font-normal" style="color:${skin.subTextColor}">/${vitals.maxSan}</span>
                             </span>
                           </div>
-                          <div class="w-full h-2.5 bg-[#dfd5c5] border border-[#a89984] p-[1px]">
-                            <div class="h-full transition-all duration-300" style="width:${sanPct}%; background-color:${palette.barSan};"></div>
+                          <div class="w-full h-2.5 ${skin.barTrackClass}">
+                            <div class="h-full transition-all duration-300" style="width:${sanPct}%; background-color:${skin.sanBar};"></div>
                           </div>
                         </div>
                       </div>
@@ -5566,13 +5721,14 @@
             </div>
           `;
 
-          if (rollEvent) triggerObsRollPopup(rollEvent, palette.ink);
+          if (rollEvent) triggerObsRollPopup(rollEvent, skin);
           return;
         }
 
+        // Layout Vertical (Card)
         const cardPhoto = chosenUrl
           ? `<img src="${chosenUrl}" alt="${ag.name}" class="w-full h-full object-cover object-top transition-all duration-300 ${autoFilterClass}" />`
-          : `<div class="w-full h-full flex items-center justify-center obs-font-stamp text-5xl text-[#3b3129] bg-[#e5dccb] ${autoFilterClass}">
+          : `<div class="w-full h-full flex items-center justify-center ${skin.titleFont} text-5xl ${autoFilterClass}" style="color:${skin.subTextColor}">
                ${initials}
              </div>`;
 
@@ -5580,61 +5736,61 @@
           <div class="w-[350px] flex flex-col items-stretch">
             <div id="obs-live-roll-slot">${activeRollHtml}</div>
 
-            <div class="relative p-4 pt-5 rounded-sm obs-paper-card space-y-3">
-              <div class="obs-tape-strip absolute -top-2.5 left-1/2 -translate-x-1/2 w-24 h-4 -rotate-1"></div>
+            <div class="relative p-4 pt-5 ${skin.cardClass} space-y-3">
+              ${skin.hasTape ? `<div class="obs-tape-strip absolute -top-2.5 left-1/2 -translate-x-1/2 w-24 h-4 -rotate-1"></div>` : ""}
 
-              <div class="bg-[#faf7f2] p-2 pb-3 border border-[#d6cbb9] shadow-md relative">
-                <div class="w-full h-[270px] overflow-hidden bg-[#d8cebe] border border-[#c2b59f]">
+              <div class="${skin.photoFrameClass} !transform-none !p-2 !pb-3 relative">
+                <div class="w-full h-[270px] overflow-hidden">
                   ${cardPhoto}
                 </div>
 
                 ${statusStamp ? `
-                  <div class="absolute top-4 right-4 px-2.5 py-1 bg-[#f3ede2]/95 border-2 border-[#991b1b] text-[#991b1b] text-xs obs-font-stamp font-bold uppercase tracking-wider rotate-3 shadow">
+                  <div class="absolute top-4 right-4 px-2.5 py-1 text-xs ${skin.titleFont} font-bold uppercase tracking-wider shadow ${skin.stampBoxClass}">
                     ${statusStamp}
                   </div>` : ""}
 
                 <div class="mt-2 flex items-baseline justify-between gap-2 px-1">
                   ${showName ? `
-                    <h1 class="text-xl obs-font-stamp font-bold text-[#1c1815] truncate">
+                    <h1 class="text-xl ${skin.titleFont} truncate" style="color:${skin.titleColor}">
                       ${ag.name || "Agente"}
                     </h1>` : `<span></span>`}
                   ${showNex ? `
-                    <span class="text-xs obs-font-typewriter font-bold text-[#574b40] shrink-0">
+                    <span class="text-xs ${skin.monoFont} font-bold shrink-0" style="color:${skin.subTextColor}">
                       NEX ${ag.nex || 5}%
                     </span>` : ""}
                 </div>
               </div>
 
               ${showBars ? `
-                <div class="space-y-2 obs-font-typewriter pt-0.5">
+                <div class="space-y-2 ${skin.monoFont} pt-0.5">
                   <div>
                     <div class="flex items-baseline justify-between text-xs mb-0.5">
-                      <span class="font-bold text-[#7f1d1d]">PV</span>
-                      <span class="text-base font-bold text-[#1c1815]">${curPv}<span class="text-xs font-normal text-[#635649]">/${vitals.maxPv}</span></span>
+                      <span class="font-bold" style="color:${skin.pvLabelColor}">PV</span>
+                      <span class="text-base font-bold" style="color:${skin.titleColor}">${curPv}<span class="text-xs font-normal" style="color:${skin.subTextColor}">/${vitals.maxPv}</span></span>
                     </div>
-                    <div class="w-full h-3 bg-[#dfd5c5] border border-[#a89984] p-[1px]">
-                      <div class="h-full transition-all duration-300" style="width:${pvPct}%; background-color:${palette.barPv};"></div>
+                    <div class="w-full h-3 ${skin.barTrackClass}">
+                      <div class="h-full transition-all duration-300" style="width:${pvPct}%; background-color:${skin.pvBar};"></div>
                     </div>
                   </div>
 
                   <div class="grid grid-cols-2 gap-3">
                     <div>
                       <div class="flex items-baseline justify-between text-xs mb-0.5">
-                        <span class="font-bold text-[#92400e]">PE</span>
-                        <span class="text-sm font-bold text-[#1c1815]">${curPe}<span class="text-[11px] font-normal text-[#635649]">/${vitals.maxPe}</span></span>
+                        <span class="font-bold" style="color:${skin.peLabelColor}">PE</span>
+                        <span class="text-sm font-bold" style="color:${skin.titleColor}">${curPe}<span class="text-[11px] font-normal" style="color:${skin.subTextColor}">/${vitals.maxPe}</span></span>
                       </div>
-                      <div class="w-full h-2.5 bg-[#dfd5c5] border border-[#a89984] p-[1px]">
-                        <div class="h-full transition-all duration-300" style="width:${pePct}%; background-color:${palette.barPe};"></div>
+                      <div class="w-full h-2.5 ${skin.barTrackClass}">
+                        <div class="h-full transition-all duration-300" style="width:${pePct}%; background-color:${skin.peBar};"></div>
                       </div>
                     </div>
 
                     <div>
                       <div class="flex items-baseline justify-between text-xs mb-0.5">
-                        <span class="font-bold text-[#1e3a8a]">SAN</span>
-                        <span class="text-sm font-bold text-[#1c1815]">${curSan}<span class="text-[11px] font-normal text-[#635649]">/${vitals.maxSan}</span></span>
+                        <span class="font-bold" style="color:${skin.sanLabelColor}">SAN</span>
+                        <span class="text-sm font-bold" style="color:${skin.titleColor}">${curSan}<span class="text-[11px] font-normal" style="color:${skin.subTextColor}">/${vitals.maxSan}</span></span>
                       </div>
-                      <div class="w-full h-2.5 bg-[#dfd5c5] border border-[#a89984] p-[1px]">
-                        <div class="h-full transition-all duration-300" style="width:${sanPct}%; background-color:${palette.barSan};"></div>
+                      <div class="w-full h-2.5 ${skin.barTrackClass}">
+                        <div class="h-full transition-all duration-300" style="width:${sanPct}%; background-color:${skin.sanBar};"></div>
                       </div>
                     </div>
                   </div>
@@ -5644,7 +5800,7 @@
           </div>
         `;
 
-        if (rollEvent) triggerObsRollPopup(rollEvent, palette.ink);
+        if (rollEvent) triggerObsRollPopup(rollEvent, skin);
       }
 
       function applyCloudPayload(data) {
@@ -5741,7 +5897,7 @@
       bootstrapObsRealtime();
     }
 
-    // ==================== 2. MODO NORMAL DA FICHA: ENVIO EM TEMPO REAL ====================
+    // ==================== 2. MODO NORMAL DA FICHA: SELETOR DE SKINS & ENVIO ====================
     if (!isObsMode) {
       let lastRosterJson = localStorage.getItem("op_agents_roster_v1") || "";
       let lastCfgJson = localStorage.getItem(OBS_CFG_KEY) || "";
@@ -5773,7 +5929,6 @@
                 const isFumble = node.classList.contains("border-rose-500");
                 if (result) {
                   const now = Date.now();
-                  // Bloqueia qualquer segundo disparo dentro de 900ms
                   if (now - lastRollDispatchTs < 900) return;
                   lastRollDispatchTs = now;
                   const rollId = `${now}_${Math.random().toString(36).slice(2, 7)}`;
@@ -5808,7 +5963,7 @@
                 <div class="flex items-center gap-2.5">
                   <span class="text-xl">🎥</span>
                   <div>
-                    <h3 class="text-base font-bold text-white">OBS Studio — Portrait Estilo Dossiê (Tempo Real)</h3>
+                    <h3 class="text-base font-bold text-white">OBS Studio — Portrait & Skins de Stream</h3>
                     <p id="obs-cloud-status-badge" class="text-[11px] font-mono text-zinc-400">${obsSyncStatusText}</p>
                   </div>
                 </div>
@@ -5821,7 +5976,7 @@
         }
       }
 
-      function buildObsUrl(agentId, layout = "webcam") {
+      function buildObsUrl(agentId, layout = "webcam", skinId = "dossier") {
         const baseUrl = window.location.href.split("?")[0].split("#")[0];
         let sessionMeta = {};
         try {
@@ -5829,12 +5984,13 @@
         } catch (e) {}
 
         const ag = getActiveRosterAgent();
-        const cfg = ag ? (getObsSettingsMap()[ag.id] || {}) : {};
+        const cfg = ag ? { ...(getObsSettingsMap()[ag.id] || {}), skin: skinId } : { skin: skinId };
         const standalonePayload = ag ? encodeStandalonePayload(ag, cfg) : "";
 
         const params = new URLSearchParams();
         params.set("obs", "1");
         params.set("layout", layout);
+        params.set("skin", skinId);
         if (agentId) params.set("agent", agentId);
         if (sessionMeta.roomCode) params.set("room", sessionMeta.roomCode);
         if (standalonePayload) params.set("d", standalonePayload);
@@ -5853,36 +6009,61 @@
           return;
         }
 
+        const cfg = getObsSettingsMap()[ag.id] || {};
+        const activeSkinId = cfg.skin || "dossier";
         broadcastObsSnapshot(null, true);
 
-        const cfg = getObsSettingsMap()[ag.id] || {};
-        const obsUrl = buildObsUrl(ag.id, selectedObsLayout);
+        const obsUrl = buildObsUrl(ag.id, selectedObsLayout, activeSkinId);
         const recSize = selectedObsLayout === "webcam" ? "Largura: 540 × Altura: 250" : "Largura: 390 × Altura: 490";
 
+        const skinCardsHtml = Object.values(OBS_SKINS).map(sk => {
+          const isSelected = sk.id === activeSkinId;
+          return `
+            <button type="button" data-obs-skin="${sk.id}"
+              class="p-3 rounded-xl border text-left transition flex flex-col justify-between gap-1 ${isSelected ? "border-purple-400 bg-purple-500/15 text-white shadow-md" : "border-[#26262e] bg-[#111114] text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"}">
+              <div class="flex items-center justify-between gap-1">
+                <span class="font-bold text-xs">${sk.name}</span>
+                ${isSelected ? `<span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-purple-500/30 text-purple-200">Ativa</span>` : ""}
+              </div>
+              <p class="text-[11px] text-zinc-400 leading-snug">${sk.desc}</p>
+            </button>
+          `;
+        }).join("");
+
         container.innerHTML = `
+          <div class="bg-[#09090b] border border-purple-500/35 rounded-2xl p-4 space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <span class="text-xs font-bold text-purple-300 uppercase tracking-wider">1. Escolha a Skin Visual do Portrait</span>
+              <span class="text-[11px] font-mono text-zinc-400">Troca em tempo real no OBS sem precisar reconfigurar</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              ${skinCardsHtml}
+            </div>
+          </div>
+
           <div class="bg-[#09090b] border border-amber-500/35 rounded-2xl p-4 space-y-3">
             <div class="flex flex-wrap items-center justify-between gap-2">
-              <span class="text-xs font-bold text-amber-300 uppercase tracking-wider">1. Formato & Link do OBS</span>
-              <span class="text-[11px] font-mono text-zinc-400">Agente vinculado: <strong class="text-emerald-400">${ag.name} (NEX ${ag.nex || 5}%)</strong></span>
+              <span class="text-xs font-bold text-amber-300 uppercase tracking-wider">2. Formato & Link do OBS</span>
+              <span class="text-[11px] font-mono text-zinc-400">Agente: <strong class="text-emerald-400">${ag.name} (NEX ${ag.nex || 5}%)</strong></span>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
               <button type="button" data-obs-layout="webcam"
                 class="p-2.5 rounded-xl border text-left transition ${selectedObsLayout === "webcam" ? "border-amber-400 bg-amber-500/15 text-white" : "border-[#26262e] bg-[#111114] text-zinc-400 hover:text-zinc-200"}">
                 <div class="font-bold flex items-center justify-between">
-                  <span>🗂 Ficha de Campo (Horizontal)</span>
+                  <span>🗂 Horizontal (Webcam / Canto)</span>
                   <span class="text-[10px] font-mono text-amber-300">540×250</span>
                 </div>
-                <p class="text-[11px] text-zinc-400 mt-0.5">Fotografia Polaroid presa com fita, nome datilografado e barras de tinta.</p>
+                <p class="text-[11px] text-zinc-400 mt-0.5">Retrato à esquerda + barras e rolagens ao lado.</p>
               </button>
 
               <button type="button" data-obs-layout="card"
                 class="p-2.5 rounded-xl border text-left transition ${selectedObsLayout === "card" ? "border-amber-400 bg-amber-500/15 text-white" : "border-[#26262e] bg-[#111114] text-zinc-400 hover:text-zinc-200"}">
                 <div class="font-bold flex items-center justify-between">
-                  <span>📎 Prontuário Vertical</span>
+                  <span>📎 Vertical (Card Completo)</span>
                   <span class="text-[10px] font-mono text-amber-300">390×490</span>
                 </div>
-                <p class="text-[11px] text-zinc-400 mt-0.5">Retrato impresso vertical em papel de arquivo com marcadores de PV/PE/SAN.</p>
+                <p class="text-[11px] text-zinc-400 mt-0.5">Retrato grande vertical com status abaixo.</p>
               </button>
             </div>
 
@@ -5897,13 +6078,12 @@
               </a>
             </div>
             <p class="text-[11px] text-zinc-400">
-              No OBS Studio: <strong>Fontes (+) → Navegador</strong> → Cole o link acima → Dimensões: <code class="text-amber-300 font-mono">${recSize}</code>.
-              <br><span class="text-amber-300">Dica no OBS:</span> Desmarque <em>"Desativar fonte quando não visível"</em> nas propriedades da fonte Navegador para nunca pausar.
+              No OBS Studio: <strong>Fontes (+) → Navegador</strong> → Cole o link → Dimensões: <code class="text-amber-300 font-mono">${recSize}</code>.
             </p>
           </div>
 
           <div class="bg-[#09090b] border border-[#26262e] rounded-2xl p-4 space-y-3">
-            <span class="block text-xs font-bold text-white uppercase tracking-wider">2. Fotografia do Agente (URL ou Upload do Computador)</span>
+            <span class="block text-xs font-bold text-white uppercase tracking-wider">3. Expressões & Fotografia do Agente</span>
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
               <div>
@@ -5920,7 +6100,7 @@
               <div>
                 <label class="block text-rose-300 mb-1">Foto Machucado (≤ 50% PV) <span class="text-zinc-500">(opcional)</span></label>
                 <div class="flex gap-1.5">
-                  <input type="text" id="obs-input-hurt" value="${cfg.avatarHurt || ""}" placeholder="Opcional (filtro sépia/contraste se vazio)"
+                  <input type="text" id="obs-input-hurt" value="${cfg.avatarHurt || ""}" placeholder="Filtro automático se vazio"
                     class="flex-1 bg-[#111114] border border-[#26262e] rounded-xl px-3 py-2 text-white outline-none" />
                   <label class="px-2.5 py-2 rounded-xl bg-[#18181d] hover:bg-zinc-800 border border-[#26262e] text-zinc-300 cursor-pointer shrink-0">
                     📁 <input type="file" accept="image/*" data-obs-file="avatarHurt" class="hidden" />
@@ -5931,7 +6111,7 @@
               <div>
                 <label class="block text-sky-300 mb-1">Foto Perturbado / Enlouquecendo <span class="text-zinc-500">(opcional)</span></label>
                 <div class="flex gap-1.5">
-                  <input type="text" id="obs-input-insane" value="${cfg.avatarInsane || ""}" placeholder="Opcional (filtro automático se vazio)"
+                  <input type="text" id="obs-input-insane" value="${cfg.avatarInsane || ""}" placeholder="Filtro automático se vazio"
                     class="flex-1 bg-[#111114] border border-[#26262e] rounded-xl px-3 py-2 text-white outline-none" />
                   <label class="px-2.5 py-2 rounded-xl bg-[#18181d] hover:bg-zinc-800 border border-[#26262e] text-zinc-300 cursor-pointer shrink-0">
                     📁 <input type="file" accept="image/*" data-obs-file="avatarInsane" class="hidden" />
@@ -5942,7 +6122,7 @@
               <div>
                 <label class="block text-zinc-400 mb-1">Foto Morrendo (0 PV) <span class="text-zinc-500">(opcional)</span></label>
                 <div class="flex gap-1.5">
-                  <input type="text" id="obs-input-dying" value="${cfg.avatarDying || ""}" placeholder="Opcional (P&B automático se vazio)"
+                  <input type="text" id="obs-input-dying" value="${cfg.avatarDying || ""}" placeholder="P&B automático se vazio"
                     class="flex-1 bg-[#111114] border border-[#26262e] rounded-xl px-3 py-2 text-white outline-none" />
                   <label class="px-2.5 py-2 rounded-xl bg-[#18181d] hover:bg-zinc-800 border border-[#26262e] text-zinc-300 cursor-pointer shrink-0">
                     📁 <input type="file" accept="image/*" data-obs-file="avatarDying" class="hidden" />
@@ -5962,7 +6142,7 @@
               </label>
               <label class="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" id="obs-chk-nex" ${cfg.showNex !== false ? "checked" : ""} />
-                <span>Mostrar NEX na Foto</span>
+                <span>Mostrar NEX</span>
               </label>
             </div>
 
@@ -5976,6 +6156,16 @@
       }
 
       document.addEventListener("click", (e) => {
+        const skinBtn = e.target.closest("[data-obs-skin]");
+        if (skinBtn) {
+          const ag = getActiveRosterAgent();
+          if (ag) {
+            saveObsSettingsForAgent(ag.id, { skin: skinBtn.getAttribute("data-obs-skin") });
+            renderObsConfigModal();
+          }
+          return;
+        }
+
         const layoutBtn = e.target.closest("[data-obs-layout]");
         if (layoutBtn) {
           selectedObsLayout = layoutBtn.getAttribute("data-obs-layout");
