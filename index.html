@@ -2,7 +2,7 @@
 <html lang="pt-BR" class="dark">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>Ordo Realitas — Ficha Digital & Compêndio v1.2</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -71,6 +71,24 @@
     }
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    /* === MOBILE-FIRST & SAFE AREA === */
+    @media (max-width: 767px) {
+      input[type="text"],
+      input[type="number"],
+      select,
+      textarea {
+        font-size: 16px !important; /* Evita auto-zoom no iPhone/Android */
+      }
+      /* Espaço no rodapé para a barra de navegação inferior fixa */
+      body {
+        padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
+      }
+      /* Toasts de rolagem aparecem no topo no celular para não cobrir a barra inferior */
+      #toast-container {
+        top: 0.75rem;
+        bottom: auto;
+      }
+    }
   </style>
 </head>
 <body class="min-h-screen flex flex-col selection:bg-purple-500/30 selection:text-white">
@@ -191,9 +209,22 @@
   <!-- CHARACTER HEADER & CORE STRIP -->
   <header class="bg-surface/95 backdrop-blur-md border-b border-borderSubtle sticky top-0 z-30">
     <div class="max-w-7xl mx-auto px-4 py-3.5 space-y-3">
-      
+      <!-- MOBILE COMPACT IDENTITY HEADER -->
+      <div class="flex md:hidden items-center justify-between gap-2">
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center gap-2">
+            <span id="mob-header-name" class="font-bold text-sm text-white truncate">Novo Agente</span>
+            <span id="mob-header-nex" class="text-[11px] font-mono font-bold px-2 py-0.5 rounded accent-soft-bg accent-text border accent-border shrink-0">NEX 5%</span>
+          </div>
+          <p id="mob-header-sub" class="text-[11px] text-zinc-400 truncate">Combatente • Aniquilador</p>
+        </div>
+        <button type="button" onclick="toggleMobileHeaderFields()" id="btn-toggle-mob-header"
+          class="px-2.5 py-1.5 rounded-lg bg-elevated border border-borderSubtle text-xs text-zinc-200 shrink-0">
+          Editar ▾
+        </button>
+      </div>
       <!-- Row 1: Identity & Progression Selectors -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 items-end">
+      <div id="header-identity-fields" class="hidden md:grid grid-cols-1 lg:grid-cols-12 gap-3 items-end">
         
         <!-- Name, Player, Origin -->
         <div class="lg:col-span-5 grid grid-cols-1 sm:grid-cols-12 gap-2.5">
@@ -768,7 +799,31 @@
 
   </main>
   </div> <!-- END #sheet-view -->
-
+  <!-- ==================== MOBILE BOTTOM NAVIGATION BAR ==================== -->
+  <nav id="mobile-bottom-nav" class="md:hidden fixed bottom-0 inset-x-0 z-40 bg-[#0c0c0f]/95 backdrop-blur-md border-t border-borderSubtle px-1 pt-1.5 pb-[calc(0.4rem+env(safe-area-inset-bottom))] hidden">
+    <div class="grid grid-cols-5 gap-1 text-center">
+      <button onclick="switchTab('combate')" id="mob-tab-btn-combate" class="mob-tab-btn flex flex-col items-center justify-center py-1 rounded-lg accent-text font-semibold">
+        <span class="text-base leading-none">⚔️</span>
+        <span class="text-[10px] mt-1">Perícias</span>
+      </button>
+      <button onclick="switchTab('habilidades')" id="mob-tab-btn-habilidades" class="mob-tab-btn flex flex-col items-center justify-center py-1 rounded-lg text-zinc-400">
+        <span class="text-base leading-none">⚡</span>
+        <span class="text-[10px] mt-1">Poderes</span>
+      </button>
+      <button onclick="switchTab('rituais')" id="mob-tab-btn-rituais" class="mob-tab-btn flex flex-col items-center justify-center py-1 rounded-lg text-zinc-400">
+        <span class="text-base leading-none">🔮</span>
+        <span class="text-[10px] mt-1">Rituais</span>
+      </button>
+      <button onclick="switchTab('inventario')" id="mob-tab-btn-inventario" class="mob-tab-btn flex flex-col items-center justify-center py-1 rounded-lg text-zinc-400">
+        <span class="text-base leading-none">🎒</span>
+        <span class="text-[10px] mt-1">Mochila</span>
+      </button>
+      <button onclick="switchTab('notas')" id="mob-tab-btn-notas" class="mob-tab-btn flex flex-col items-center justify-center py-1 rounded-lg text-zinc-400">
+        <span class="text-base leading-none">📜</span>
+        <span class="text-[10px] mt-1">Notas</span>
+      </button>
+    </div>
+  </nav>
   <!-- ==================== MODALS ==================== -->
 
   <!-- MODAL: CREATE NEW AGENT / QUICK TEMPLATES -->
@@ -4073,7 +4128,54 @@
         showToast('Ficha Resetada', 'Todos os campos desta ficha voltaram aos valores iniciais.', '5%');
       }
     }
+// ==================== MOBILE-FIRST HELPERS ====================
+    function toggleMobileHeaderFields() {
+      const fields = document.getElementById('header-identity-fields');
+      const btn = document.getElementById('btn-toggle-mob-header');
+      if (!fields || !btn) return;
+      const isHidden = fields.classList.contains('hidden');
+      fields.classList.toggle('hidden', !isHidden);
+      fields.classList.toggle('grid', isHidden);
+      btn.textContent = isHidden ? 'Fechar ▲' : 'Editar ▾';
+    }
 
+    // Estende applyViewVisibility para mostrar/esconder a barra inferior mobile
+    const _origApplyViewVisibility = applyViewVisibility;
+    applyViewVisibility = function () {
+      _origApplyViewVisibility();
+      const mobNav = document.getElementById('mobile-bottom-nav');
+      if (mobNav) {
+        mobNav.classList.toggle('hidden', rosterData.view === 'hub');
+      }
+    };
+
+    // Estende switchTab para sincronizar o estado ativo nos botões inferiores
+    const _origSwitchTab = switchTab;
+    switchTab = function (tabName) {
+      _origSwitchTab(tabName);
+      document.querySelectorAll('.mob-tab-btn').forEach(btn => {
+        btn.classList.remove('accent-text', 'font-semibold', 'accent-soft-bg');
+        btn.classList.add('text-zinc-400');
+      });
+      const activeMobBtn = document.getElementById(`mob-tab-btn-${tabName}`);
+      if (activeMobBtn) {
+        activeMobBtn.classList.add('accent-text', 'font-semibold', 'accent-soft-bg');
+        activeMobBtn.classList.remove('text-zinc-400');
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    // Estende renderHeader para atualizar o resumo compacto no topo do celular
+    const _origRenderHeader = renderHeader;
+    renderHeader = function () {
+      _origRenderHeader();
+      const mName = document.getElementById('mob-header-name');
+      const mNex = document.getElementById('mob-header-nex');
+      const mSub = document.getElementById('mob-header-sub');
+      if (mName) mName.textContent = state.name || 'Agente Sem Nome';
+      if (mNex) mNex.textContent = `NEX ${state.nex}%`;
+      if (mSub) mSub.textContent = `${state.charClass} • ${state.path} • ${state.origin}`;
+    };
     // ==================== INITIALIZATION ====================
     window.addEventListener('DOMContentLoaded', () => {
       initStaticDropdowns();
