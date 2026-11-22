@@ -92,7 +92,74 @@
       --text-muted: #6ee7b7;
       --text-faint: #34d399;
     }
+[data-theme="coquette"] {
+      --bg-void: #fff1f5;
+      --bg-surface: #ffffff;
+      --bg-elevated: #ffe4ec;
+      --bg-hover: #fecdd3;
+      --border-subtle: #fbcfe8;
+      --border-strong: #f472b6;
+      --text-primary: #4c0519;
+      --text-secondary: #831843;
+      --text-muted: #9d174d;
+      --text-faint: #be185d;
 
+      --accent: #ec4899;
+      --accent-soft: rgba(236, 72, 153, 0.14);
+      --accent-border: rgba(236, 72, 153, 0.45);
+    }
+
+    /* Bordas e contraste do tema Coquette */
+    [data-theme="coquette"] .divide-borderSubtle\/50 > :not([hidden]) ~ :not([hidden]),
+    [data-theme="coquette"] [class*="border-borderSubtle"] {
+      border-color: #fbcfe8 !important;
+    }
+    [data-theme="coquette"] .bg-void\/40,
+    [data-theme="coquette"] .bg-void\/80 {
+      background-color: rgba(255, 228, 236, 0.65) !important;
+    }
+
+    /* Lacinhos decorativos nos painéis e cabeçalho do tema Coquette */
+    [data-theme="coquette"] header::after {
+      content: " 🎀";
+    }
+    [data-theme="coquette"] .bg-surface.border {
+      position: relative;
+      box-shadow: 0 4px 14px rgba(244, 114, 182, 0.12);
+    }
+    [data-theme="coquette"] .bg-surface.border::after {
+      content: "🎀";
+      position: absolute;
+      top: -9px;
+      right: 10px;
+      font-size: 13px;
+      line-height: 1;
+      pointer-events: none;
+      filter: drop-shadow(0 1px 2px rgba(190, 24, 93, 0.25));
+    }
+
+    /* Ajuste de contraste de textos e botões no Coquette */
+    [data-theme="coquette"] .text-amber-300 { color: #b45309 !important; }
+    [data-theme="coquette"] .text-amber-400 { color: #d97706 !important; }
+    [data-theme="coquette"] .text-sky-300 { color: #0369a1 !important; }
+    [data-theme="coquette"] .text-emerald-300,
+    [data-theme="coquette"] .text-emerald-400 { color: #047857 !important; }
+    [data-theme="coquette"] .text-rose-300,
+    [data-theme="coquette"] .text-rose-400 { color: #be123c !important; }
+    [data-theme="coquette"] .text-purple-300,
+    [data-theme="coquette"] .text-purple-400 { color: #9d174d !important; }
+
+    [data-theme="coquette"] .accent-bg,
+    [data-theme="coquette"] .bg-purple-600,
+    [data-theme="coquette"] .bg-emerald-600 {
+      color: #ffffff !important;
+    }
+    [data-theme="coquette"] .bg-red-950\/40,
+    [data-theme="coquette"] .bg-red-950\/30 {
+      background-color: rgba(225, 29, 72, 0.12) !important;
+      border-color: rgba(225, 29, 72, 0.35) !important;
+      color: #be123c !important;
+    }
     /* === CORREÇÃO DAS LINHAS BRANCAS NO C.R.I.S. E DOSSIÊ === */
     /* Impede o fallback para currentColor quando Tailwind usa /50, /70, /80 em variáveis CSS */
     [data-theme="cris"] .divide-borderSubtle\/50 > :not([hidden]) ~ :not([hidden]),
@@ -230,12 +297,12 @@
             class="bg-void border border-borderSubtle focus:border-zinc-500 rounded-md px-2 py-1 text-xs text-white outline-none max-w-[170px]">
           </select>
         </div>
-        <select id="site-theme-select" onchange="setSiteTheme(this.value)" title="Tema Visual do Site"
-          class="bg-elevated border border-borderSubtle rounded-md px-2 py-1 text-xs text-white outline-none cursor-pointer">
-          <option value="dark">🌑 Escuro</option>
-          <option value="light">☀️ Claro</option>
-          <option value="dossier">🗂 Dossiê</option>
-          <option value="cris">📟 Terminal C.R.I.S.</option>
+        <select id="theme-selector" onchange="changeTheme(this.value)" title="Tema Visual" class="bg-elevated border border-borderSubtle text-textSecondary text-xs font-medium rounded-lg px-2 py-1.5 focus:outline-none focus:border-borderStrong cursor-pointer">
+          <option value="dark">Escuro</option>
+          <option value="light">Claro</option>
+          <option value="dossier">Dossiê</option>
+          <option value="cris">Terminal C.R.I.S.</option>
+          <option value="coquette">🎀 Coquette (Para a Júlia)</option>
         </select>
         <button onclick="openRollHistoryModal()" class="px-2.5 py-1 rounded-md bg-elevated hover:bg-zinc-800 border border-borderSubtle text-zinc-200 transition flex items-center gap-1.5">
         <button onclick="openRollHistoryModal()" class="px-2.5 py-1 rounded-md bg-elevated hover:bg-zinc-800 border border-borderSubtle text-zinc-200 transition flex items-center gap-1.5">
@@ -4306,7 +4373,7 @@
     const SITE_THEME_KEY = 'op_site_theme_v1';
 
     function setSiteTheme(themeName) {
-      const validThemes = ['dark', 'light', 'dossier', 'cris'];
+      const validThemes = ['dark', 'light', 'dossier', 'cris', 'coquette'];
       const chosen = validThemes.includes(themeName) ? themeName : 'dark';
 
       document.documentElement.setAttribute('data-theme', chosen);
