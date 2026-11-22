@@ -18,31 +18,99 @@
             mono: ['JetBrains Mono', 'monospace'],
           },
           colors: {
-            void: '#09090b',
-            surface: '#111114',
-            elevated: '#18181d',
-            borderSubtle: '#26262e',
+            void: 'var(--bg-void)',
+            surface: 'var(--bg-surface)',
+            elevated: 'var(--bg-elevated)',
+            borderSubtle: 'var(--border-subtle)',
+            white: 'var(--text-primary)',
+            zinc: {
+              200: 'var(--text-secondary)',
+              300: 'var(--text-secondary)',
+              400: 'var(--text-muted)',
+              500: 'var(--text-faint)',
+              700: 'var(--border-strong)',
+              800: 'var(--bg-hover)',
+            }
           }
         }
       }
     }
   </script>
   <style>
-    :root {
+    :root, [data-theme="dark"] {
+      --bg-void: #09090b;
+      --bg-surface: #111114;
+      --bg-elevated: #18181d;
+      --bg-hover: #27272a;
+      --border-subtle: #26262e;
+      --border-strong: #3f3f46;
+      --text-primary: #ffffff;
+      --text-secondary: #e4e4e7;
+      --text-muted: #a1a1aa;
+      --text-faint: #71717a;
+
       --accent: #a855f7;
       --accent-soft: rgba(168, 85, 247, 0.14);
       --accent-border: rgba(168, 85, 247, 0.42);
     }
+
+    [data-theme="light"] {
+      --bg-void: #f4f4f5;
+      --bg-surface: #ffffff;
+      --bg-elevated: #e4e4e7;
+      --bg-hover: #d4d4d8;
+      --border-subtle: #d4d4d8;
+      --border-strong: #a1a1aa;
+      --text-primary: #09090b;
+      --text-secondary: #27272a;
+      --text-muted: #52525b;
+      --text-faint: #71717a;
+    }
+
+    [data-theme="dossier"] {
+      --bg-void: #e7dec8;
+      --bg-surface: #f4eee1;
+      --bg-elevated: #dfd4bc;
+      --bg-hover: #d1c3a5;
+      --border-subtle: #c5b696;
+      --border-strong: #9c8c6c;
+      --text-primary: #1c1815;
+      --text-secondary: #332b24;
+      --text-muted: #5c4f42;
+      --text-faint: #7d6d5d;
+    }
+
+    [data-theme="cris"] {
+      --bg-void: #030a06;
+      --bg-surface: #07140d;
+      --bg-elevated: #0d2418;
+      --bg-hover: #143624;
+      --border-subtle: #163d29;
+      --border-strong: #225c3e;
+      --text-primary: #ecfdf5;
+      --text-secondary: #a7f3d0;
+      --text-muted: #6ee7b7;
+      --text-faint: #34d399;
+    }
+
+    [data-theme="light"] .text-amber-300,
+    [data-theme="dossier"] .text-amber-300 { color: #b45309 !important; }
+    [data-theme="light"] .text-sky-300,
+    [data-theme="dossier"] .text-sky-300 { color: #0369a1 !important; }
+    [data-theme="light"] .text-emerald-400,
+    [data-theme="dossier"] .text-emerald-400 { color: #047857 !important; }
+
     body {
-      background-color: #09090b;
-      color: #f4f4f5;
+      background-color: var(--bg-void);
+      color: var(--text-primary);
       font-family: 'Inter', sans-serif;
       -webkit-font-smoothing: antialiased;
+      transition: background-color 0.2s ease, color 0.2s ease;
     }
     ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: #09090b; }
-    ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 9999px; }
-    ::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
+    ::-webkit-scrollbar-track { background: var(--bg-void); }
+    ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-faint); }
 
     .accent-text { color: var(--accent); }
     .accent-bg { background-color: var(--accent); }
@@ -94,7 +162,7 @@
 <body class="min-h-screen flex flex-col selection:bg-purple-500/30 selection:text-white">
 
   <!-- TOP UTILITY BAR -->
-  <div class="bg-[#0c0c0f] border-b border-borderSubtle px-4 py-2 text-xs text-zinc-400">
+  <div class="bg-surface border-b border-borderSubtle px-4 py-2 text-xs text-zinc-400">
     <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
       <div class="flex items-center gap-2.5 flex-wrap">
         <button id="btn-back-hub" onclick="openHubScreen()" class="hidden px-2.5 py-1 rounded-md accent-soft-bg accent-text border accent-border font-semibold hover:brightness-110 transition flex items-center gap-1.5">
@@ -112,6 +180,14 @@
             class="bg-void border border-borderSubtle focus:border-zinc-500 rounded-md px-2 py-1 text-xs text-white outline-none max-w-[170px]">
           </select>
         </div>
+        <select id="site-theme-select" onchange="setSiteTheme(this.value)" title="Tema Visual do Site"
+          class="bg-elevated border border-borderSubtle rounded-md px-2 py-1 text-xs text-white outline-none cursor-pointer">
+          <option value="dark">🌑 Escuro</option>
+          <option value="light">☀️ Claro</option>
+          <option value="dossier">🗂 Dossiê</option>
+          <option value="cris">📟 Terminal C.R.I.S.</option>
+        </select>
+        <button onclick="openRollHistoryModal()" class="px-2.5 py-1 rounded-md bg-elevated hover:bg-zinc-800 border border-borderSubtle text-zinc-200 transition flex items-center gap-1.5">
         <button onclick="openRollHistoryModal()" class="px-2.5 py-1 rounded-md bg-elevated hover:bg-zinc-800 border border-borderSubtle text-zinc-200 transition flex items-center gap-1.5">
           <span>📜</span> <span class="hidden sm:inline">Histórico</span> <span id="roll-history-count" class="font-mono text-[10px] px-1.5 py-0.2 rounded bg-void text-zinc-400">0</span>
         </button>
@@ -330,7 +406,7 @@
   </header>
 
   <!-- CORE STATS STRIP (ALWAYS VISIBLE) -->
-  <div class="bg-[#0c0c0f] border-b border-borderSubtle">
+  <div class="bg-surface border-b border-borderSubtle">
     <div class="max-w-7xl mx-auto px-4 py-4">
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
         
@@ -800,7 +876,7 @@
   </main>
   </div> <!-- END #sheet-view -->
   <!-- ==================== MOBILE BOTTOM NAVIGATION BAR ==================== -->
-  <nav id="mobile-bottom-nav" class="md:hidden fixed bottom-0 inset-x-0 z-40 bg-[#0c0c0f]/95 backdrop-blur-md border-t border-borderSubtle px-1 pt-1.5 pb-[calc(0.4rem+env(safe-area-inset-bottom))] hidden">
+  <nav id="mobile-bottom-nav" class="md:hidden fixed bottom-0 inset-x-0 z-40 bg-surface/95 backdrop-blur-md border-t border-borderSubtle px-1 pt-1.5 pb-[calc(0.4rem+env(safe-area-inset-bottom))] hidden">
     <div class="grid grid-cols-5 gap-1 text-center">
       <button onclick="switchTab('combate')" id="mob-tab-btn-combate" class="mob-tab-btn flex flex-col items-center justify-center py-1 rounded-lg accent-text font-semibold">
         <span class="text-base leading-none">⚔️</span>
@@ -4176,8 +4252,40 @@
       if (mNex) mNex.textContent = `NEX ${state.nex}%`;
       if (mSub) mSub.textContent = `${state.charClass} • ${state.path} • ${state.origin}`;
     };
+    // ==================== SITE THEME SYSTEM ====================
+    const SITE_THEME_KEY = 'op_site_theme_v1';
+
+    function setSiteTheme(themeName) {
+      const validThemes = ['dark', 'light', 'dossier', 'cris'];
+      const chosen = validThemes.includes(themeName) ? themeName : 'dark';
+
+      document.documentElement.setAttribute('data-theme', chosen);
+
+      if (chosen === 'light' || chosen === 'dossier') {
+        document.documentElement.classList.remove('dark');
+      } else {
+        document.documentElement.classList.add('dark');
+      }
+
+      localStorage.setItem(SITE_THEME_KEY, chosen);
+
+      const selectEl = document.getElementById('site-theme-select');
+      if (selectEl) selectEl.value = chosen;
+    }
+
+    function initSiteTheme() {
+      const saved = localStorage.getItem(SITE_THEME_KEY);
+      if (saved) {
+        setSiteTheme(saved);
+      } else {
+        const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+        setSiteTheme(prefersLight ? 'light' : 'dark');
+      }
+    }
+
     // ==================== INITIALIZATION ====================
     window.addEventListener('DOMContentLoaded', () => {
+      initSiteTheme();
       initStaticDropdowns();
       applyViewVisibility();
       if (rosterData.view === 'hub') {
