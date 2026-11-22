@@ -122,6 +122,10 @@
     /* Lacinhos decorativos nos painéis e cabeçalho do tema Coquette */
     [data-theme="coquette"] header::after {
       content: " 🎀";
+      display: inline-block;
+      font-size: 20px;
+      margin-left: 6px;
+      transform: rotate(18deg);
     }
     [data-theme="coquette"] .bg-surface.border {
       position: relative;
@@ -130,12 +134,13 @@
     [data-theme="coquette"] .bg-surface.border::after {
       content: "🎀";
       position: absolute;
-      top: -9px;
-      right: 10px;
-      font-size: 13px;
+      top: -14px;
+      right: 6px;
+      font-size: 24px;
       line-height: 1;
       pointer-events: none;
-      filter: drop-shadow(0 1px 2px rgba(190, 24, 93, 0.25));
+      transform: rotate(22deg);
+      filter: drop-shadow(0 2px 3px rgba(190, 24, 93, 0.28));
     }
 
     /* Ajuste de contraste de textos e botões no Coquette */
