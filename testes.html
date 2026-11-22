@@ -36,7 +36,7 @@
       }
     }
   </script>
-  <style>
+ <style>
     :root, [data-theme="dark"] {
       --bg-void: #09090b;
       --bg-surface: #111114;
@@ -55,16 +55,16 @@
     }
 
     [data-theme="light"] {
-      --bg-void: #f4f4f5;
+      --bg-void: #f1f5f9;
       --bg-surface: #ffffff;
-      --bg-elevated: #e4e4e7;
-      --bg-hover: #d4d4d8;
-      --border-subtle: #d4d4d8;
-      --border-strong: #a1a1aa;
-      --text-primary: #09090b;
-      --text-secondary: #27272a;
-      --text-muted: #52525b;
-      --text-faint: #71717a;
+      --bg-elevated: #e2e8f0;
+      --bg-hover: #cbd5e1;
+      --border-subtle: #cbd5e1;
+      --border-strong: #94a3b8;
+      --text-primary: #0f172a;
+      --text-secondary: #1e293b;
+      --text-muted: #475569;
+      --text-faint: #64748b;
     }
 
     [data-theme="dossier"] {
@@ -93,12 +93,62 @@
       --text-faint: #34d399;
     }
 
+    /* === CORREÇÃO DAS LINHAS BRANCAS NO C.R.I.S. E DOSSIÊ === */
+    /* Impede o fallback para currentColor quando Tailwind usa /50, /70, /80 em variáveis CSS */
+    [data-theme="cris"] .divide-borderSubtle\/50 > :not([hidden]) ~ :not([hidden]),
+    [data-theme="cris"] [class*="border-borderSubtle"] {
+      border-color: #163d29 !important;
+    }
+    [data-theme="dossier"] .divide-borderSubtle\/50 > :not([hidden]) ~ :not([hidden]),
+    [data-theme="dossier"] [class*="border-borderSubtle"] {
+      border-color: #c5b696 !important;
+    }
+    [data-theme="light"] .divide-borderSubtle\/50 > :not([hidden]) ~ :not([hidden]),
+    [data-theme="light"] [class*="border-borderSubtle"] {
+      border-color: #cbd5e1 !important;
+    }
+    [data-theme="cris"] .bg-void\/40,
+    [data-theme="cris"] .bg-void\/80 {
+      background-color: rgba(3, 10, 6, 0.65) !important;
+    }
+
+    /* === CORREÇÃO DE CONTRASTE NO TEMA CLARO E DOSSIÊ === */
     [data-theme="light"] .text-amber-300,
     [data-theme="dossier"] .text-amber-300 { color: #b45309 !important; }
+    [data-theme="light"] .text-amber-400,
+    [data-theme="dossier"] .text-amber-400 { color: #d97706 !important; }
     [data-theme="light"] .text-sky-300,
     [data-theme="dossier"] .text-sky-300 { color: #0369a1 !important; }
+    [data-theme="light"] .text-emerald-300,
     [data-theme="light"] .text-emerald-400,
+    [data-theme="dossier"] .text-emerald-300,
     [data-theme="dossier"] .text-emerald-400 { color: #047857 !important; }
+    [data-theme="light"] .text-rose-300,
+    [data-theme="light"] .text-rose-400,
+    [data-theme="dossier"] .text-rose-300,
+    [data-theme="dossier"] .text-rose-400 { color: #be123c !important; }
+    [data-theme="light"] .text-purple-300,
+    [data-theme="light"] .text-purple-400,
+    [data-theme="dossier"] .text-purple-300,
+    [data-theme="dossier"] .text-purple-400 { color: #7e22ce !important; }
+
+    /* Mantém texto branco real dentro de botões sólidos coloridos no tema claro/dossiê */
+    [data-theme="light"] .accent-bg,
+    [data-theme="light"] .bg-purple-600,
+    [data-theme="light"] .bg-emerald-600,
+    [data-theme="dossier"] .accent-bg,
+    [data-theme="dossier"] .bg-purple-600,
+    [data-theme="dossier"] .bg-emerald-600 {
+      color: #ffffff !important;
+    }
+    [data-theme="light"] .bg-red-950\/40,
+    [data-theme="light"] .bg-red-950\/30,
+    [data-theme="dossier"] .bg-red-950\/40,
+    [data-theme="dossier"] .bg-red-950\/30 {
+      background-color: rgba(225, 29, 72, 0.12) !important;
+      border-color: rgba(225, 29, 72, 0.35) !important;
+      color: #be123c !important;
+    }
 
     body {
       background-color: var(--bg-void);
@@ -125,7 +175,8 @@
     input[type=number] { -moz-appearance: textfield; }
 
     .tab-active {
-      color: #ffffff;
+      color: var(--text-primary) !important;
+      font-weight: 600;
       border-bottom: 2px solid var(--accent);
       background: linear-gradient(to top, var(--accent-soft), transparent);
     }
@@ -139,19 +190,18 @@
     }
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
     /* === MOBILE-FIRST & SAFE AREA === */
     @media (max-width: 767px) {
       input[type="text"],
       input[type="number"],
       select,
       textarea {
-        font-size: 16px !important; /* Evita auto-zoom no iPhone/Android */
+        font-size: 16px !important;
       }
-      /* Espaço no rodapé para a barra de navegação inferior fixa */
       body {
         padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
       }
-      /* Toasts de rolagem aparecem no topo no celular para não cobrir a barra inferior */
       #toast-container {
         top: 0.75rem;
         bottom: auto;
