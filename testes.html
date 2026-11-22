@@ -297,14 +297,13 @@
             class="bg-void border border-borderSubtle focus:border-zinc-500 rounded-md px-2 py-1 text-xs text-white outline-none max-w-[170px]">
           </select>
         </div>
-        <select id="theme-selector" onchange="changeTheme(this.value)" title="Tema Visual" class="bg-elevated border border-borderSubtle text-textSecondary text-xs font-medium rounded-lg px-2 py-1.5 focus:outline-none focus:border-borderStrong cursor-pointer">
-          <option value="dark">Escuro</option>
-          <option value="light">Claro</option>
-          <option value="dossier">Dossiê</option>
-          <option value="cris">Terminal C.R.I.S.</option>
-          <option value="coquette">🎀 Coquette (Para a Júlia)</option>
-        </select>
-        <button onclick="openRollHistoryModal()" class="px-2.5 py-1 rounded-md bg-elevated hover:bg-zinc-800 border border-borderSubtle text-zinc-200 transition flex items-center gap-1.5">
+        <select id="site-theme-select" onchange="setSiteTheme(this.value)" title="Tema Visual" class="bg-elevated border border-borderSubtle text-zinc-200 text-xs font-medium rounded-lg px-2 py-1.5 focus:outline-none focus:border-borderStrong cursor-pointer">
+  <option value="dark">Escuro</option>
+  <option value="light">Claro</option>
+  <option value="dossier">Dossiê</option>
+  <option value="cris">Terminal C.R.I.S.</option>
+  <option value="coquette">🎀 Coquette (Para a Júlia)</option>
+</select>
         <button onclick="openRollHistoryModal()" class="px-2.5 py-1 rounded-md bg-elevated hover:bg-zinc-800 border border-borderSubtle text-zinc-200 transition flex items-center gap-1.5">
           <span>📜</span> <span class="hidden sm:inline">Histórico</span> <span id="roll-history-count" class="font-mono text-[10px] px-1.5 py-0.2 rounded bg-void text-zinc-400">0</span>
         </button>
@@ -2989,11 +2988,19 @@
     }
 
     function applyTheme() {
-      const theme = ELEMENT_THEMES[state.affinity] || ELEMENT_THEMES['Nenhuma'];
-      document.documentElement.style.setProperty('--accent', theme.accent);
-      document.documentElement.style.setProperty('--accent-soft', theme.soft);
-      document.documentElement.style.setProperty('--accent-border', theme.border);
-    }
+  const currentSiteTheme = document.documentElement.getAttribute('data-theme');
+  if (currentSiteTheme === 'coquette') {
+    document.documentElement.style.setProperty('--accent', '#ec4899');
+    document.documentElement.style.setProperty('--accent-soft', 'rgba(236, 72, 153, 0.14)');
+    document.documentElement.style.setProperty('--accent-border', 'rgba(236, 72, 153, 0.45)');
+    return;
+  }
+
+  const theme = ELEMENT_THEMES[state.affinity] || ELEMENT_THEMES['Nenhuma'];
+  document.documentElement.style.setProperty('--accent', theme.accent);
+  document.documentElement.style.setProperty('--accent-soft', theme.soft);
+  document.documentElement.style.setProperty('--accent-border', theme.border);
+}
 
     function updateField(key, value) {
       const prevMax = calculateMaxStats();
@@ -4373,22 +4380,24 @@
     const SITE_THEME_KEY = 'op_site_theme_v1';
 
     function setSiteTheme(themeName) {
-      const validThemes = ['dark', 'light', 'dossier', 'cris', 'coquette'];
-      const chosen = validThemes.includes(themeName) ? themeName : 'dark';
+  const validThemes = ['dark', 'light', 'dossier', 'cris', 'coquette'];
+  const chosen = validThemes.includes(themeName) ? themeName : 'dark';
 
-      document.documentElement.setAttribute('data-theme', chosen);
+  document.documentElement.setAttribute('data-theme', chosen);
 
-      if (chosen === 'light' || chosen === 'dossier') {
-        document.documentElement.classList.remove('dark');
-      } else {
-        document.documentElement.classList.add('dark');
-      }
+  if (chosen === 'light' || chosen === 'dossier' || chosen === 'coquette') {
+    document.documentElement.classList.remove('dark');
+  } else {
+    document.documentElement.classList.add('dark');
+  }
 
-      localStorage.setItem(SITE_THEME_KEY, chosen);
+  localStorage.setItem(SITE_THEME_KEY, chosen);
 
-      const selectEl = document.getElementById('site-theme-select');
-      if (selectEl) selectEl.value = chosen;
-    }
+  const selectEl = document.getElementById('site-theme-select');
+  if (selectEl) selectEl.value = chosen;
+
+  if (typeof applyTheme === 'function') applyTheme();
+}
 
     function initSiteTheme() {
       const saved = localStorage.getItem(SITE_THEME_KEY);
