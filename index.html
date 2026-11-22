@@ -18,31 +18,216 @@
             mono: ['JetBrains Mono', 'monospace'],
           },
           colors: {
-            void: '#09090b',
-            surface: '#111114',
-            elevated: '#18181d',
-            borderSubtle: '#26262e',
+            void: 'var(--bg-void)',
+            surface: 'var(--bg-surface)',
+            elevated: 'var(--bg-elevated)',
+            borderSubtle: 'var(--border-subtle)',
+            white: 'var(--text-primary)',
+            zinc: {
+              200: 'var(--text-secondary)',
+              300: 'var(--text-secondary)',
+              400: 'var(--text-muted)',
+              500: 'var(--text-faint)',
+              700: 'var(--border-strong)',
+              800: 'var(--bg-hover)',
+            }
           }
         }
       }
     }
   </script>
-  <style>
-    :root {
+ <style>
+    :root, [data-theme="dark"] {
+      --bg-void: #09090b;
+      --bg-surface: #111114;
+      --bg-elevated: #18181d;
+      --bg-hover: #27272a;
+      --border-subtle: #26262e;
+      --border-strong: #3f3f46;
+      --text-primary: #ffffff;
+      --text-secondary: #e4e4e7;
+      --text-muted: #a1a1aa;
+      --text-faint: #71717a;
+
       --accent: #a855f7;
       --accent-soft: rgba(168, 85, 247, 0.14);
       --accent-border: rgba(168, 85, 247, 0.42);
     }
+
+    [data-theme="light"] {
+      --bg-void: #f1f5f9;
+      --bg-surface: #ffffff;
+      --bg-elevated: #e2e8f0;
+      --bg-hover: #cbd5e1;
+      --border-subtle: #cbd5e1;
+      --border-strong: #94a3b8;
+      --text-primary: #0f172a;
+      --text-secondary: #1e293b;
+      --text-muted: #475569;
+      --text-faint: #64748b;
+    }
+
+    [data-theme="dossier"] {
+      --bg-void: #e7dec8;
+      --bg-surface: #f4eee1;
+      --bg-elevated: #dfd4bc;
+      --bg-hover: #d1c3a5;
+      --border-subtle: #c5b696;
+      --border-strong: #9c8c6c;
+      --text-primary: #1c1815;
+      --text-secondary: #332b24;
+      --text-muted: #5c4f42;
+      --text-faint: #7d6d5d;
+    }
+
+    [data-theme="cris"] {
+      --bg-void: #030a06;
+      --bg-surface: #07140d;
+      --bg-elevated: #0d2418;
+      --bg-hover: #143624;
+      --border-subtle: #163d29;
+      --border-strong: #225c3e;
+      --text-primary: #ecfdf5;
+      --text-secondary: #a7f3d0;
+      --text-muted: #6ee7b7;
+      --text-faint: #34d399;
+    }
+[data-theme="coquette"] {
+      --bg-void: #fff1f5;
+      --bg-surface: #ffffff;
+      --bg-elevated: #ffe4ec;
+      --bg-hover: #fecdd3;
+      --border-subtle: #fbcfe8;
+      --border-strong: #f472b6;
+      --text-primary: #4c0519;
+      --text-secondary: #831843;
+      --text-muted: #9d174d;
+      --text-faint: #be185d;
+
+      --accent: #ec4899;
+      --accent-soft: rgba(236, 72, 153, 0.14);
+      --accent-border: rgba(236, 72, 153, 0.45);
+    }
+
+    /* Bordas e contraste do tema Coquette */
+    [data-theme="coquette"] .divide-borderSubtle\/50 > :not([hidden]) ~ :not([hidden]),
+    [data-theme="coquette"] [class*="border-borderSubtle"] {
+      border-color: #fbcfe8 !important;
+    }
+    [data-theme="coquette"] .bg-void\/40,
+    [data-theme="coquette"] .bg-void\/80 {
+      background-color: rgba(255, 228, 236, 0.65) !important;
+    }
+
+    /* Lacinhos decorativos nos painéis e cabeçalho do tema Coquette */
+    [data-theme="coquette"] header::after {
+      content: " 🎀";
+    }
+    [data-theme="coquette"] .bg-surface.border {
+      position: relative;
+      box-shadow: 0 4px 14px rgba(244, 114, 182, 0.12);
+    }
+    [data-theme="coquette"] .bg-surface.border::after {
+      content: "🎀";
+      position: absolute;
+      top: -9px;
+      right: 10px;
+      font-size: 13px;
+      line-height: 1;
+      pointer-events: none;
+      filter: drop-shadow(0 1px 2px rgba(190, 24, 93, 0.25));
+    }
+
+    /* Ajuste de contraste de textos e botões no Coquette */
+    [data-theme="coquette"] .text-amber-300 { color: #b45309 !important; }
+    [data-theme="coquette"] .text-amber-400 { color: #d97706 !important; }
+    [data-theme="coquette"] .text-sky-300 { color: #0369a1 !important; }
+    [data-theme="coquette"] .text-emerald-300,
+    [data-theme="coquette"] .text-emerald-400 { color: #047857 !important; }
+    [data-theme="coquette"] .text-rose-300,
+    [data-theme="coquette"] .text-rose-400 { color: #be123c !important; }
+    [data-theme="coquette"] .text-purple-300,
+    [data-theme="coquette"] .text-purple-400 { color: #9d174d !important; }
+
+    [data-theme="coquette"] .accent-bg,
+    [data-theme="coquette"] .bg-purple-600,
+    [data-theme="coquette"] .bg-emerald-600 {
+      color: #ffffff !important;
+    }
+    [data-theme="coquette"] .bg-red-950\/40,
+    [data-theme="coquette"] .bg-red-950\/30 {
+      background-color: rgba(225, 29, 72, 0.12) !important;
+      border-color: rgba(225, 29, 72, 0.35) !important;
+      color: #be123c !important;
+    }
+    /* === CORREÇÃO DAS LINHAS BRANCAS NO C.R.I.S. E DOSSIÊ === */
+    /* Impede o fallback para currentColor quando Tailwind usa /50, /70, /80 em variáveis CSS */
+    [data-theme="cris"] .divide-borderSubtle\/50 > :not([hidden]) ~ :not([hidden]),
+    [data-theme="cris"] [class*="border-borderSubtle"] {
+      border-color: #163d29 !important;
+    }
+    [data-theme="dossier"] .divide-borderSubtle\/50 > :not([hidden]) ~ :not([hidden]),
+    [data-theme="dossier"] [class*="border-borderSubtle"] {
+      border-color: #c5b696 !important;
+    }
+    [data-theme="light"] .divide-borderSubtle\/50 > :not([hidden]) ~ :not([hidden]),
+    [data-theme="light"] [class*="border-borderSubtle"] {
+      border-color: #cbd5e1 !important;
+    }
+    [data-theme="cris"] .bg-void\/40,
+    [data-theme="cris"] .bg-void\/80 {
+      background-color: rgba(3, 10, 6, 0.65) !important;
+    }
+
+    /* === CORREÇÃO DE CONTRASTE NO TEMA CLARO E DOSSIÊ === */
+    [data-theme="light"] .text-amber-300,
+    [data-theme="dossier"] .text-amber-300 { color: #b45309 !important; }
+    [data-theme="light"] .text-amber-400,
+    [data-theme="dossier"] .text-amber-400 { color: #d97706 !important; }
+    [data-theme="light"] .text-sky-300,
+    [data-theme="dossier"] .text-sky-300 { color: #0369a1 !important; }
+    [data-theme="light"] .text-emerald-300,
+    [data-theme="light"] .text-emerald-400,
+    [data-theme="dossier"] .text-emerald-300,
+    [data-theme="dossier"] .text-emerald-400 { color: #047857 !important; }
+    [data-theme="light"] .text-rose-300,
+    [data-theme="light"] .text-rose-400,
+    [data-theme="dossier"] .text-rose-300,
+    [data-theme="dossier"] .text-rose-400 { color: #be123c !important; }
+    [data-theme="light"] .text-purple-300,
+    [data-theme="light"] .text-purple-400,
+    [data-theme="dossier"] .text-purple-300,
+    [data-theme="dossier"] .text-purple-400 { color: #7e22ce !important; }
+
+    /* Mantém texto branco real dentro de botões sólidos coloridos no tema claro/dossiê */
+    [data-theme="light"] .accent-bg,
+    [data-theme="light"] .bg-purple-600,
+    [data-theme="light"] .bg-emerald-600,
+    [data-theme="dossier"] .accent-bg,
+    [data-theme="dossier"] .bg-purple-600,
+    [data-theme="dossier"] .bg-emerald-600 {
+      color: #ffffff !important;
+    }
+    [data-theme="light"] .bg-red-950\/40,
+    [data-theme="light"] .bg-red-950\/30,
+    [data-theme="dossier"] .bg-red-950\/40,
+    [data-theme="dossier"] .bg-red-950\/30 {
+      background-color: rgba(225, 29, 72, 0.12) !important;
+      border-color: rgba(225, 29, 72, 0.35) !important;
+      color: #be123c !important;
+    }
+
     body {
-      background-color: #09090b;
-      color: #f4f4f5;
+      background-color: var(--bg-void);
+      color: var(--text-primary);
       font-family: 'Inter', sans-serif;
       -webkit-font-smoothing: antialiased;
+      transition: background-color 0.2s ease, color 0.2s ease;
     }
     ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: #09090b; }
-    ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 9999px; }
-    ::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
+    ::-webkit-scrollbar-track { background: var(--bg-void); }
+    ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-faint); }
 
     .accent-text { color: var(--accent); }
     .accent-bg { background-color: var(--accent); }
@@ -57,7 +242,8 @@
     input[type=number] { -moz-appearance: textfield; }
 
     .tab-active {
-      color: #ffffff;
+      color: var(--text-primary) !important;
+      font-weight: 600;
       border-bottom: 2px solid var(--accent);
       background: linear-gradient(to top, var(--accent-soft), transparent);
     }
@@ -71,19 +257,18 @@
     }
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
     /* === MOBILE-FIRST & SAFE AREA === */
     @media (max-width: 767px) {
       input[type="text"],
       input[type="number"],
       select,
       textarea {
-        font-size: 16px !important; /* Evita auto-zoom no iPhone/Android */
+        font-size: 16px !important;
       }
-      /* Espaço no rodapé para a barra de navegação inferior fixa */
       body {
         padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
       }
-      /* Toasts de rolagem aparecem no topo no celular para não cobrir a barra inferior */
       #toast-container {
         top: 0.75rem;
         bottom: auto;
@@ -94,7 +279,7 @@
 <body class="min-h-screen flex flex-col selection:bg-purple-500/30 selection:text-white">
 
   <!-- TOP UTILITY BAR -->
-  <div class="bg-[#0c0c0f] border-b border-borderSubtle px-4 py-2 text-xs text-zinc-400">
+  <div class="bg-surface border-b border-borderSubtle px-4 py-2 text-xs text-zinc-400">
     <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
       <div class="flex items-center gap-2.5 flex-wrap">
         <button id="btn-back-hub" onclick="openHubScreen()" class="hidden px-2.5 py-1 rounded-md accent-soft-bg accent-text border accent-border font-semibold hover:brightness-110 transition flex items-center gap-1.5">
@@ -112,6 +297,13 @@
             class="bg-void border border-borderSubtle focus:border-zinc-500 rounded-md px-2 py-1 text-xs text-white outline-none max-w-[170px]">
           </select>
         </div>
+        <select id="site-theme-select" onchange="setSiteTheme(this.value)" title="Tema Visual" class="bg-elevated border border-borderSubtle text-zinc-200 text-xs font-medium rounded-lg px-2 py-1.5 focus:outline-none focus:border-borderStrong cursor-pointer">
+  <option value="dark">Escuro</option>
+  <option value="light">Claro</option>
+  <option value="dossier">Dossiê</option>
+  <option value="cris">Terminal C.R.I.S.</option>
+  <option value="coquette">🎀 Coquette (Para a Júlia)</option>
+</select>
         <button onclick="openRollHistoryModal()" class="px-2.5 py-1 rounded-md bg-elevated hover:bg-zinc-800 border border-borderSubtle text-zinc-200 transition flex items-center gap-1.5">
           <span>📜</span> <span class="hidden sm:inline">Histórico</span> <span id="roll-history-count" class="font-mono text-[10px] px-1.5 py-0.2 rounded bg-void text-zinc-400">0</span>
         </button>
@@ -330,7 +522,7 @@
   </header>
 
   <!-- CORE STATS STRIP (ALWAYS VISIBLE) -->
-  <div class="bg-[#0c0c0f] border-b border-borderSubtle">
+  <div class="bg-surface border-b border-borderSubtle">
     <div class="max-w-7xl mx-auto px-4 py-4">
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
         
@@ -800,7 +992,7 @@
   </main>
   </div> <!-- END #sheet-view -->
   <!-- ==================== MOBILE BOTTOM NAVIGATION BAR ==================== -->
-  <nav id="mobile-bottom-nav" class="md:hidden fixed bottom-0 inset-x-0 z-40 bg-[#0c0c0f]/95 backdrop-blur-md border-t border-borderSubtle px-1 pt-1.5 pb-[calc(0.4rem+env(safe-area-inset-bottom))] hidden">
+  <nav id="mobile-bottom-nav" class="md:hidden fixed bottom-0 inset-x-0 z-40 bg-surface/95 backdrop-blur-md border-t border-borderSubtle px-1 pt-1.5 pb-[calc(0.4rem+env(safe-area-inset-bottom))] hidden">
     <div class="grid grid-cols-5 gap-1 text-center">
       <button onclick="switchTab('combate')" id="mob-tab-btn-combate" class="mob-tab-btn flex flex-col items-center justify-center py-1 rounded-lg accent-text font-semibold">
         <span class="text-base leading-none">⚔️</span>
@@ -2796,11 +2988,19 @@
     }
 
     function applyTheme() {
-      const theme = ELEMENT_THEMES[state.affinity] || ELEMENT_THEMES['Nenhuma'];
-      document.documentElement.style.setProperty('--accent', theme.accent);
-      document.documentElement.style.setProperty('--accent-soft', theme.soft);
-      document.documentElement.style.setProperty('--accent-border', theme.border);
-    }
+  const currentSiteTheme = document.documentElement.getAttribute('data-theme');
+  if (currentSiteTheme === 'coquette') {
+    document.documentElement.style.setProperty('--accent', '#ec4899');
+    document.documentElement.style.setProperty('--accent-soft', 'rgba(236, 72, 153, 0.14)');
+    document.documentElement.style.setProperty('--accent-border', 'rgba(236, 72, 153, 0.45)');
+    return;
+  }
+
+  const theme = ELEMENT_THEMES[state.affinity] || ELEMENT_THEMES['Nenhuma'];
+  document.documentElement.style.setProperty('--accent', theme.accent);
+  document.documentElement.style.setProperty('--accent-soft', theme.soft);
+  document.documentElement.style.setProperty('--accent-border', theme.border);
+}
 
     function updateField(key, value) {
       const prevMax = calculateMaxStats();
@@ -4176,8 +4376,42 @@
       if (mNex) mNex.textContent = `NEX ${state.nex}%`;
       if (mSub) mSub.textContent = `${state.charClass} • ${state.path} • ${state.origin}`;
     };
+    // ==================== SITE THEME SYSTEM ====================
+    const SITE_THEME_KEY = 'op_site_theme_v1';
+
+    function setSiteTheme(themeName) {
+  const validThemes = ['dark', 'light', 'dossier', 'cris', 'coquette'];
+  const chosen = validThemes.includes(themeName) ? themeName : 'dark';
+
+  document.documentElement.setAttribute('data-theme', chosen);
+
+  if (chosen === 'light' || chosen === 'dossier' || chosen === 'coquette') {
+    document.documentElement.classList.remove('dark');
+  } else {
+    document.documentElement.classList.add('dark');
+  }
+
+  localStorage.setItem(SITE_THEME_KEY, chosen);
+
+  const selectEl = document.getElementById('site-theme-select');
+  if (selectEl) selectEl.value = chosen;
+
+  if (typeof applyTheme === 'function') applyTheme();
+}
+
+    function initSiteTheme() {
+      const saved = localStorage.getItem(SITE_THEME_KEY);
+      if (saved) {
+        setSiteTheme(saved);
+      } else {
+        const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+        setSiteTheme(prefersLight ? 'light' : 'dark');
+      }
+    }
+
     // ==================== INITIALIZATION ====================
     window.addEventListener('DOMContentLoaded', () => {
+      initSiteTheme();
       initStaticDropdowns();
       applyViewVisibility();
       if (rosterData.view === 'hub') {
