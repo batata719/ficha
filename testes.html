@@ -1630,6 +1630,7 @@
 
     const CLASSES_DB = {
       'Combatente': {
+        desc: 'Treinado para lutar com todo tipo de armas, e com a força e a coragem para encarar os perigos de frente. É o tipo de agente que prefere abordagens mais diretas e costuma atirar primeiro e perguntar depois. Do mercenário especialista em armas de fogo até o perito em espadas, combatentes apresentam uma gama enorme de habilidades e técnicas especiais que aprimoram sua eficiência no campo de batalha, tornando-os membros essenciais em qualquer missão de extermínio.',
         baseAbility: { name: 'Ataque Especial (2 PE)', desc: 'Quando faz um ataque, você pode gastar 2 PE para receber +5 no teste de ataque ou na rolagem de dano (aumenta em +5 para cada +1 PE em NEX 25%, 55% e 85%).' },
         paths: {
           'Aniquilador': [
@@ -1665,6 +1666,7 @@
         }
       },
       'Especialista': {
+        desc: 'Um agente que confia mais em esperteza do que em força bruta. Especialistas se valem de conhecimento técnico, raciocínio rápido ou mesmo lábia para resolver mistérios e enfrentar o paranormal. Cientistas, inventores, pesquisadores e técnicos de vários tipos são exemplos de especialistas, que são tão variados quanto as áreas do conhecimento e da tecnologia.',
         baseAbility: { name: 'Perito (2 PE) & Eclético (2 PE)', desc: 'Perito: Escolha 2 perícias treinadas; gaste 2 PE para somar +1d6 (sobe até +1d12). Eclético: Gaste 2 PE para ser considerado treinado em qualquer perícia por um teste.' },
         paths: {
           'Atirador de Elite': [
@@ -1700,6 +1702,7 @@
         }
       },
       'Ocultista': {
+        desc: 'O Outro Lado é misterioso, perigoso e, de certa forma, cativante. Muitos estudiosos das entidades se perdem em seus reinos obscuros em busca de poder, mas existem aqueles que visam compreender e dominar os mistérios paranormais para usá-los para combater o próprio Outro Lado. Esse tipo de agente não apenas é um conhecedor do oculto, como também possui talento para se conectar com elementos paranormais.',
         baseAbility: { name: 'Escolhido pelo Outro Lado', desc: 'Você pode lançar rituais de 1º círculo (2º em NEX 25%, 3º em NEX 55%, 4º em NEX 85%). Começa com 3 rituais de 1º círculo e aprende +1 a cada novo NEX.' },
         paths: {
           'Conduíte': [
@@ -3396,22 +3399,29 @@
       const classObj = CLASSES_DB[state.charClass];
 
       document.getElementById('auto-origin-class-cards').innerHTML = `
-        <div class="bg-surface border accent-border rounded-2xl p-5 space-y-2">
-          <div class="flex items-center justify-between">
-            <span class="text-[10px] font-mono uppercase tracking-wider accent-text font-semibold">Origem: ${originObj.name}</span>
-            <span class="text-[11px] font-mono text-zinc-400">${originObj.skills.length ? originObj.skills.join(' • ') : 'Livre'}</span>
+        <div class="bg-surface border accent-border rounded-2xl p-5 space-y-2.5 flex flex-col justify-between">
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-mono uppercase tracking-wider accent-text font-semibold">Origem Oficial: ${originObj.name}</span>
+              <span class="text-[11px] font-mono text-zinc-400">${originObj.skills.length ? originObj.skills.join(' • ') : 'Livre'}</span>
+            </div>
+            <h4 class="text-base font-bold text-white">${originObj.power}</h4>
+            <p class="text-xs text-zinc-300 leading-relaxed">${originObj.desc}</p>
           </div>
-          <h4 class="text-base font-bold text-white">${originObj.power}</h4>
-          <p class="text-xs text-zinc-300 leading-relaxed">${originObj.desc}</p>
         </div>
 
-        <div class="bg-surface border border-borderSubtle rounded-2xl p-5 space-y-2">
-          <div class="flex items-center justify-between">
-            <span class="text-[10px] font-mono uppercase tracking-wider text-zinc-400 font-semibold">Habilidade Base de ${state.charClass}</span>
-            <span class="text-[11px] font-mono text-amber-300">NEX 5%</span>
+        <div class="bg-surface border border-borderSubtle rounded-2xl p-5 space-y-3">
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-mono uppercase tracking-wider text-zinc-400 font-semibold">Classe: ${state.charClass}</span>
+              <span class="text-[11px] font-mono text-amber-300">NEX 5%</span>
+            </div>
+            <p class="text-xs text-zinc-400 italic leading-relaxed border-b border-borderSubtle/70 pb-2.5">${classObj.desc}</p>
           </div>
-          <h4 class="text-base font-bold text-white">${classObj.baseAbility.name}</h4>
-          <p class="text-xs text-zinc-300 leading-relaxed">${classObj.baseAbility.desc}</p>
+          <div class="space-y-1">
+            <h4 class="text-sm font-bold text-white">${classObj.baseAbility.name}</h4>
+            <p class="text-xs text-zinc-300 leading-relaxed">${classObj.baseAbility.desc}</p>
+          </div>
         </div>
       `;
 
@@ -4441,7 +4451,7 @@
       'Combatente': {
         icon: '⚔️',
         tagline: 'Linha de frente, resistência e dano pesado.',
-        summary: 'Ideal para quem quer proteger o grupo, usar armas pesadas e sobreviver aos ataques diretos das criaturas.',
+        summary: 'Treinado para lutar com todo tipo de armas, e com a força e a coragem para encarar os perigos de frente. Prefere abordagens diretas, atirando primeiro e perguntando depois.',
         recommendedAttrs: { AGI: 2, FOR: 3, INT: 1, PRE: 1, VIG: 2 },
         recommendedSkills: ['Iniciativa', 'Atletismo'],
         starterKit: [
@@ -4454,7 +4464,7 @@
       'Especialista': {
         icon: '🕵️',
         tagline: 'Investigação, perícias, furtividade e suporte.',
-        summary: 'Ideal para quem gosta de resolver mistérios, abrir fechaduras, hackear sistemas, curar aliados ou atirar de longe.',
+        summary: 'Um agente que confia mais em esperteza do que em força bruta. Vale-se de conhecimento técnico, raciocínio rápido ou lábia para resolver mistérios e enfrentar o paranormal.',
         recommendedAttrs: { AGI: 3, FOR: 1, INT: 3, PRE: 2, VIG: 1 },
         recommendedSkills: ['Investigação', 'Percepção', 'Pontaria', 'Furtividade', 'Reflexos', 'Tecnologia', 'Medicina', 'Intuição', 'Crime', 'Acrobacia'],
         starterKit: [
@@ -4468,7 +4478,7 @@
       'Ocultista': {
         icon: '🔮',
         tagline: 'Rituais paranormais, conhecimento proibido e controle.',
-        summary: 'Ideal para quem quer manipular os elementos do Outro Lado (Sangue, Morte, Conhecimento e Energia) para atacar ou auxiliar.',
+        summary: 'Estudioso que busca compreender e dominar os mistérios paranormais para combater o próprio Outro Lado, possuindo talento para se conectar com os elementos. Mas lembre-se: O Outro Lado tem seu preço ',
         recommendedAttrs: { AGI: 1, FOR: 1, INT: 3, PRE: 3, VIG: 2 },
         recommendedSkills: ['Investigação', 'Percepção', 'Iniciativa', 'Intuição', 'Religião', 'Atualidades'],
         starterKit: [
