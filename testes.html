@@ -516,26 +516,7 @@
       </nav>
     </div>
   </header>
-  <!-- ==================== RASTREADOR DE CONDIÇÕES ATIVAS ==================== -->
-  <div id="conditions-tracker-bar" class="bg-surface/90 border-b border-borderSubtle relative z-20">
-    <div class="max-w-7xl mx-auto px-4 py-2 flex flex-col gap-1.5">
-      <div class="flex items-center gap-2 overflow-x-auto no-scrollbar">
-        <span class="text-[10px] font-mono uppercase tracking-wider text-zinc-500 font-semibold shrink-0">
-          Condições:
-        </span>
-        <div id="conditions-pills-list" class="flex items-center gap-1.5 shrink-0">
-          <!-- Preenchido via JS -->
-        </div>
-        <button id="btn-clear-conditions" onclick="clearAllConditions()"
-          class="hidden text-[10px] font-mono px-2 py-0.5 rounded bg-elevated hover:bg-zinc-800 text-zinc-400 hover:text-white border border-borderSubtle shrink-0 transition">
-          Limpar
-        </button>
-      </div>
-      <!-- Caixa de penalidade automática ao passar o mouse / tocar -->
-      <div id="condition-penalty-preview" class="hidden text-[11px] bg-void border border-borderSubtle rounded-lg px-3 py-1.5 text-zinc-200 leading-snug">
-      </div>
-    </div>
-  </div>
+
   <!-- CORE STATS STRIP (ALWAYS VISIBLE) -->
   <div class="bg-surface border-b border-borderSubtle">
     <div class="max-w-7xl mx-auto px-4 py-4">
@@ -1536,157 +1517,6 @@
 
   <!-- ==================== FULL COMPENDIUM DATABASES & LOGIC ==================== -->
   <script>
-    // ==================== RASTREADOR DE CONDIÇÕES OFICIAIS ====================
-    const OFFICIAL_CONDITIONS = [
-      {
-        id: 'sangrando',
-        name: 'Sangrando',
-        tone: 'rose',
-        penalty: 'No início de seu turno, faça teste de Vigor (DT 20). Se passar, estabiliza e remove a condição; se falhar, perde 1d6 PV e continua sangrando.'
-      },
-      {
-        id: 'machucado',
-        name: 'Machucado',
-        tone: 'rose',
-        penalty: 'Você está com menos da metade dos seus PV totais. Ativa efeitos específicos de poderes e trilhas (como Sangue Fervente e Inquebrável).'
-      },
-      {
-        id: 'fraco',
-        name: 'Fraco',
-        tone: 'amber',
-        penalty: 'Sofre -1d20 em testes de Agilidade, Força e Vigor. Se ficar fraco novamente, torna-se Debilitado.'
-      },
-      {
-        id: 'vulneravel',
-        name: 'Vulnerável',
-        tone: 'amber',
-        penalty: 'Sofre -2 na Defesa.'
-      },
-      {
-        id: 'agarrado',
-        name: 'Agarrado',
-        tone: 'amber',
-        penalty: 'Fica desprevenido e imóvel, sofre -1d20 em testes de ataque e só pode atacar com armas leves. Ataques à distância contra você têm 50% de chance de acertar quem o agarra.'
-      },
-      {
-        id: 'apavorado',
-        name: 'Apavorado',
-        tone: 'purple',
-        penalty: 'Sofre -2d20 em testes de perícia e deve fugir da fonte do medo da maneira mais eficiente possível (não pode se aproximar voluntariamente).'
-      },
-      {
-        id: 'enjoado',
-        name: 'Enjoado',
-        tone: 'emerald',
-        penalty: 'Só pode realizar uma ação padrão ou de movimento por turno (não ambas).'
-      },
-      {
-        id: 'atordoado',
-        name: 'Atordoado',
-        tone: 'sky',
-        penalty: 'Fica desprevenido e não pode fazer ações.'
-      },
-      {
-        id: 'morrendo',
-        name: 'Morrendo',
-        tone: 'rose',
-        penalty: 'Inconsciente e indefeso com 0 PV. Se iniciar 3 turnos seguidos morrendo (mesmo não consecutivos na cena), você morre.'
-      },
-      {
-        id: 'enlouquecendo',
-        name: 'Enlouquecendo',
-        tone: 'purple',
-        penalty: 'Com 0 de Sanidade. Se iniciar 3 turnos seguidos enlouquecendo sem ser acalmado (Religião ou Diplomacia DT 20), você enlouquece permanentemente.'
-      }
-    ];
-
-    let hoveredConditionId = null;
-
-    function renderConditionsBar() {
-      const container = document.getElementById('conditions-pills-list');
-      const preview = document.getElementById('condition-penalty-preview');
-      const clearBtn = document.getElementById('btn-clear-conditions');
-      if (!container || !preview) return;
-
-      if (!Array.isArray(state.conditions)) state.conditions = [];
-
-      const toneClasses = {
-        rose: 'bg-rose-500/20 border-rose-500/60 text-rose-300 font-semibold',
-        amber: 'bg-amber-500/20 border-amber-500/60 text-amber-300 font-semibold',
-        purple: 'accent-soft-bg accent-border accent-text font-semibold',
-        emerald: 'bg-emerald-500/20 border-emerald-500/60 text-emerald-300 font-semibold',
-        sky: 'bg-sky-500/20 border-sky-500/60 text-sky-300 font-semibold'
-      };
-
-      container.innerHTML = OFFICIAL_CONDITIONS.map(cond => {
-        const isActive = state.conditions.includes(cond.id);
-        const activeStyle = isActive
-          ? toneClasses[cond.tone]
-          : 'bg-void border-borderSubtle text-zinc-400 hover:text-zinc-200 hover:border-zinc-600';
-
-        return `
-          <button type="button"
-            onclick="toggleCondition('${cond.id}')"
-            onmouseenter="previewCondition('${cond.id}')"
-            onmouseleave="clearConditionPreview()"
-            ontouchstart="previewCondition('${cond.id}')"
-            class="px-2.5 py-1 rounded-full border text-[11px] font-mono transition flex items-center gap-1.5 ${activeStyle}">
-            <span class="w-1.5 h-1.5 rounded-full ${isActive ? 'bg-current animate-pulse' : 'bg-zinc-600'}"></span>
-            <span>${cond.name}</span>
-          </button>
-        `;
-      }).join('');
-
-      if (clearBtn) {
-        clearBtn.classList.toggle('hidden', state.conditions.length === 0);
-      }
-
-      // Exibe o detalhe da condição sob o mouse/toque ou das condições ativas
-      const targetCond = OFFICIAL_CONDITIONS.find(c => c.id === hoveredConditionId);
-      if (targetCond) {
-        preview.classList.remove('hidden');
-        preview.innerHTML = `<strong class="accent-text font-mono">${targetCond.name}:</strong> ${targetCond.penalty}`;
-      } else if (state.conditions.length > 0) {
-        const activeObjs = OFFICIAL_CONDITIONS.filter(c => state.conditions.includes(c.id));
-        preview.classList.remove('hidden');
-        preview.innerHTML = activeObjs
-          .map(c => `<span class="inline-block mr-3"><strong class="text-white font-mono">• ${c.name}:</strong> <span class="text-zinc-300">${c.penalty}</span></span>`)
-          .join('');
-      } else {
-        preview.classList.add('hidden');
-        preview.innerHTML = '';
-      }
-    }
-
-    function toggleCondition(condId) {
-      if (!Array.isArray(state.conditions)) state.conditions = [];
-      const idx = state.conditions.indexOf(condId);
-      if (idx >= 0) {
-        state.conditions.splice(idx, 1);
-      } else {
-        state.conditions.push(condId);
-      }
-      hoveredConditionId = condId;
-      saveState();
-      refreshAll();
-    }
-
-    function previewCondition(condId) {
-      hoveredConditionId = condId;
-      renderConditionsBar();
-    }
-
-    function clearConditionPreview() {
-      hoveredConditionId = null;
-      renderConditionsBar();
-    }
-
-    function clearAllConditions() {
-      state.conditions = [];
-      hoveredConditionId = null;
-      saveState();
-      refreshAll();
-    }
     const NEX_STEPS = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 99];
 
     const ATTRIBUTE_INFO = [
@@ -2515,7 +2345,6 @@
         nex: 5,
         pp: 0,
         affinity: 'Nenhuma',
-        conditions: [],
         attributes: { AGI: 1, FOR: 1, INT: 1, PRE: 1, VIG: 1 },
         combatenteAttackSkill: 'Luta',
         combatenteDefenseSkill: 'Fortitude',
@@ -3237,7 +3066,6 @@
       const currentSpaces = state.inventory.reduce((acc, it) => acc + computeItemEffectiveStats(it).effectiveSpaces, 0);
       const isOverloaded = currentSpaces > maxSpaces;
 
-      const isVulnerable = Array.isArray(state.conditions) && state.conditions.includes('vulneravel');
       const defense = 10 + agi + armorDefense + originDefBonus + powerDefBonus + (state.defenseOther || 0) - (isOverloaded ? 5 : 0);
       const reflexBonus = (state.skills['Reflexos']?.rank || 0) + (state.skills['Reflexos']?.other || 0);
       const fortitudeBonus = (state.skills['Fortitude']?.rank || 0) + (state.skills['Fortitude']?.other || 0);
@@ -4167,7 +3995,6 @@
     function refreshAll() {
       applyTheme();
       renderHeader();
-      renderConditionsBar();
       renderAttributesAndVitals();
       renderCombatAndSkills();
       renderAbilitiesTab();
