@@ -1599,33 +1599,188 @@
     };
 
     const ORIGINS_DB = [
-      { name: 'Personalizada', skills: [], power: 'Origem Livre', desc: 'Escolha quaisquer 2 perícias para treinar e defina com o mestre um poder de origem personalizado.' },
-      { name: 'Acadêmico', skills: ['Ciências', 'Investigação'], power: 'Saber é Poder', desc: 'Quando faz um teste usando Intelecto, você pode gastar 2 PE para receber +5 nesse teste.' },
-      { name: 'Agente de Saúde', skills: ['Intuição', 'Medicina'], power: 'Técnica Medicinal', desc: 'Sempre que cura um personagem, você adiciona seu Intelecto no total de PV curados.' },
-      { name: 'Amnésico', skills: [], power: 'Vislumbres do Passado', desc: 'Treinado em 2 perícias à escolha do mestre. Uma vez por sessão, pode fazer um teste de Intelecto (DT 10) para reconhecer algo e receber +2 PE.' },
-      { name: 'Artista', skills: ['Artes', 'Enganação'], power: 'Magnum Opus', desc: 'Uma vez por missão, pode determinar que um personagem envolvido em uma cena de interação o reconheça, recebendo +5 em testes de Presença contra ele.' },
-      { name: 'Atleta', skills: ['Acrobacia', 'Atletismo'], power: '110%', desc: 'Quando faz um teste de perícia usando Força ou Agilidade (exceto Luta e Pontaria) você pode gastar 2 PE para receber +5 nesse teste.' },
-      { name: 'Chef', skills: ['Fortitude', 'Profissão'], power: 'Ingrediente Secreto', desc: 'Em cenas de interlúdio, você pode fazer a ação alimentar-se para preparar um prato especial que concede +1d6 em um atributo à escolha dos aliados.' },
-      { name: 'Criminoso', skills: ['Crime', 'Furtividade'], power: 'O Crime Compensa', desc: 'No final de uma missão, escolha um item encontrado. Em sua próxima missão, você pode incluir esse item sem contar no limite de categoria.' },
-      { name: 'Cultista Arrependido', skills: ['Ocultismo', 'Religião'], power: 'Traços do Outro Lado', desc: 'Você possui um poder paranormal à sua escolha, mas começa o jogo com metade da Sanidade normal para sua classe.' },
-      { name: 'Desgarrado', skills: ['Fortitude', 'Sobrevivência'], power: 'Calejado', desc: 'Você recebe +1 PV para cada 5% de NEX (já aplicado automaticamente na ficha).' },
-      { name: 'Engenheiro', skills: ['Profissão', 'Tecnologia'], power: 'Ferramentas Favoritas', desc: 'Um item a sua escolha (exceto armas) conta como uma categoria abaixo para você (mínimo 0).' },
-      { name: 'Executivo', skills: ['Diplomacia', 'Profissão'], power: 'Processo Otimizado', desc: 'Sempre que faz um teste de perícia durante um teste estendido ou ação de revisão, pode pagar 2 PE para receber +5 nesse teste.' },
-      { name: 'Investigador', skills: ['Investigação', 'Percepção'], power: 'Faro para Pistas', desc: 'Uma vez por cena, quando fizer um teste para procurar pistas, você pode gastar 1 PE para receber +5 nesse teste.' },
-      { name: 'Lutador', skills: ['Luta', 'Reflexos'], power: 'Mão Pesada', desc: 'Você recebe +2 em rolagens de dano com ataques corpo a corpo.' },
-      { name: 'Magnata', skills: ['Diplomacia', 'Pilotagem'], power: 'Patrocinador da Ordem', desc: 'Seu limite de crédito é sempre considerado um acima do atual.' },
-      { name: 'Mercenário', skills: ['Iniciativa', 'Intimidação'], power: 'Posição de Combate', desc: 'No primeiro turno de cada cena de ação, você pode gastar 2 PE para receber uma ação de movimento adicional.' },
-      { name: 'Militar', skills: ['Pontaria', 'Tática'], power: 'Para Bellum', desc: 'Você recebe +2 em rolagens de dano com armas de fogo.' },
-      { name: 'Operário', skills: ['Fortitude', 'Profissão'], power: 'Ferramenta de Trabalho', desc: 'Escolha uma arma simples ou tática que seria usada como ferramenta (como marreta ou machado). Você recebe +1 em testes de ataque, dano e margem de ameaça com ela.' },
-      { name: 'Policial', skills: ['Percepção', 'Pontaria'], power: 'Patrulha', desc: 'Você recebe +2 em Defesa (já aplicado automaticamente na ficha).' },
-      { name: 'Religioso', skills: ['Religião', 'Vontade'], power: 'Acalentar', desc: 'Você recebe +5 em testes de Religião para acalmar. Além disso, quando acalma uma pessoa, ela recebe um número de pontos de Sanidade igual a 1d6 + sua Presença.' },
-      { name: 'Servidor Público', skills: ['Intuição', 'Vontade'], power: 'Espírito Cívico', desc: 'Sempre que faz um teste para ajudar, você pode gastar 1 PE para aumentar o bônus concedido em +2.' },
-      { name: 'Teórico da Conspiração', skills: ['Investigação', 'Ocultismo'], power: 'Eu Já Sabia', desc: 'Você não se abala com entidades ou anomalias. Você recebe resistência a dano mental igual ao seu Intelecto.' },
-      { name: 'T.I.', skills: ['Investigação', 'Tecnologia'], power: 'Motor de Busca', desc: 'Sempre que tiver acesso a internet, você pode gastar 2 PE para substituir um teste de qualquer perícia por um teste de Tecnologia.' },
-      { name: 'Trabalhador Rural', skills: ['Adestramento', 'Sobrevivência'], power: 'Desbravador', desc: 'Quando faz um teste de Adestramento ou Sobrevivência, você pode gastar 2 PE para receber +5 nesse teste. Além disso, você não sofre penalidade de deslocamento por terreno difícil.' },
-      { name: 'Trambiqueiro', skills: ['Crime', 'Enganação'], power: 'Impostor', desc: 'Uma vez por cena, você pode gastar 2 PE para substituir um teste de perícia qualquer por um teste de Enganação.' },
-      { name: 'Universitário', skills: ['Atualidades', 'Investigação'], power: 'Dedicação', desc: 'Você recebe +1 PE e mais 1 PE adicional a cada NEX ímpar, e seu limite de PE por turno aumenta em 1 (já aplicado automaticamente).' },
-      { name: 'Vítima', skills: ['Reflexos', 'Vontade'], power: 'Cicatrizes Psicológicas', desc: 'Você recebe +1 de Sanidade para cada 5% de NEX (já aplicado automaticamente na ficha).' }
+      {
+        name: 'Acadêmico',
+        lore: 'Você era um pesquisador ou professor universitário. De forma proposital ou não, seus estudos tocaram em assuntos misteriosos e chamaram a atenção da Ordo Realitas.',
+        skills: ['Ciências', 'Investigação'],
+        power: 'Saber é Poder',
+        desc: 'Quando faz um teste usando Intelecto, você pode gastar 2 PE para receber +5 nesse teste.'
+      },
+      {
+        name: 'Agente de Saúde',
+        lore: 'Você era um profissional da saúde como um enfermeiro, farmacêutico, médico, psicólogo ou socorrista, treinado no atendimento e cuidado de pessoas. Você pode ter sido recrutado pela Ordem por conta de seus conhecimentos ou por ter se deparado com algo paranormal durante seu trabalho.',
+        skills: ['Intuição', 'Medicina'],
+        power: 'Técnica Medicinal',
+        desc: 'Sempre que cura um personagem, você adiciona seu Intelecto no total de PV curados.'
+      },
+      {
+        name: 'Amnésico',
+        lore: 'Você perdeu a maior parte da sua memória. Sabe apenas o próprio nome, ou nem isso. Sua amnésia pode ser resultado de um trauma paranormal ou mesmo de um ritual. Talvez você tenha sido vítima de cultistas? Talvez você tenha sido um cultista? Seja como for, hoje a Ordem é a única família que conhece. Quem sabe, cumprindo missões, você descubra algo sobre seu passado.',
+        skills: [],
+        power: 'Vislumbres do Passado',
+        desc: 'Você recebe duas perícias a escolha do mestre. Uma vez por sessão, pode fazer um teste de Intelecto (DT 10) para reconhecer pessoas ou lugares familiares.'
+      },
+      {
+        name: 'Artista',
+        lore: 'Você era um ator, músico, escritor, dançarino, influenciador... Seu trabalho pode ter sido inspirado por uma experiência paranormal do passado e o que o público acha que é pura criatividade, a Ordem sabe que tem um fundo de verdade.',
+        skills: ['Artes', 'Enganação'],
+        power: 'Magnum Opus',
+        desc: 'Você é famoso por uma de suas obras. Uma vez por missão, pode determinar que um personagem envolto em uma cena de interação o reconheça. Você recebe +5 em testes de Presença e perícias baseadas em Presença contra aquele personagem.'
+      },
+      {
+        name: 'Atleta',
+        lore: 'Você competia em um esporte individual ou por equipe, como natação ou futebol. Sua alta performance pode ser fruto de alguma influência paranormal que nem mesmo você conhecia ou você pode ter se envolvido em algum evento paranormal em uma de suas competições.',
+        skills: ['Acrobacia', 'Atletismo'],
+        power: '110%',
+        desc: 'Quando faz um teste de perícia usando Força ou Agilidade (exceto luta e pontaria) você pode gastar 2 PE para receber +5 nesse teste.'
+      },
+      {
+        name: 'Chef',
+        lore: 'Você é um cozinheiro amador ou profissional. Talvez trabalhasse em um restaurante, talvez simplesmente gostasse de cozinhar para a família e amigos. Como muitos chefs, você já explorou ingredientes bastante exóticos para criar pratos únicos — e algum deles pode ter sido paranormal.',
+        skills: ['Fortitude', 'Profissão'],
+        power: 'Ingrediente Secreto',
+        desc: 'Em cenas de interlúdio, você pode fazer a ação alimentar-se para cozinhar um prato especial. Você, e todos os membros do grupo que se alimentarem, recebem o benefício de dois pratos.'
+      },
+      {
+        name: 'Criminoso',
+        lore: 'Você vivia uma vida fora da lei, seja como mero batedor de carteiras, seja como membro de uma facção criminosa. Em algum momento, você se envolveu em um assunto da Ordem, talvez tenha roubado um item amaldiçoado. A organização, então, lhe deu uma escolha: ser preso ou trabalhar para ela.',
+        skills: ['Crime', 'Furtividade'],
+        power: 'O Crime Compensa',
+        desc: 'No final de uma missão, escolha um item encontrado na missão. Em sua próxima missão, você pode incluir esse item em seu inventário sem que ele conte em seu limite de itens por patente.'
+      },
+      {
+        name: 'Cultista Arrependido',
+        lore: 'Você fez parte de um culto paranormal. Talvez fossem apenas ignorantes iludidos, que acreditavam estar contatando entidades benevolentes. Talvez soubessem exatamente o que estavam fazendo. Seja como for, algo abriu seus olhos e agora você luta pelo lado certo — embora carregue para sempre traços de sua vida pregressa.',
+        skills: ['Ocultismo', 'Religião'],
+        power: 'Traços do Outro Lado',
+        desc: 'Você possui um poder paranormal à sua escolha. Porém, começa o jogo com metade da Sanidade normal para sua classe.'
+      },
+      {
+        name: 'Desgarrado',
+        lore: 'Você não vivia de acordo com as normas da sociedade. Era um eremita, uma pessoa em situação de rua ou simplesmente alguém que descobriu o paranormal e abandonou sua rotina — sabendo o quão frágil era a fachada da normalidade. De um jeito ou de outro, todas essas vidas marginalizadas o ensinaram a se virar sem muito conforto.',
+        skills: ['Fortitude', 'Sobrevivência'],
+        power: 'Calejado',
+        desc: 'Você recebe +1 PV para cada 5% de NEX.'
+      },
+      {
+        name: 'Engenheiro',
+        lore: 'Enquanto os acadêmicos estão preocupados com teorias, você colocar a mão na massa, seja como engenheiro profissional, seja como inventor de garagem. Provavelmente você criou algum dispositivo paranormal que chamou a atenção da Ordem.',
+        skills: ['Profissão', 'Tecnologia'],
+        power: 'Ferramentas Favoritas',
+        desc: 'Um item a sua escolha (exceto armas) conta como uma categoria abaixo.'
+      },
+      {
+        name: 'Executivo',
+        lore: 'Você possuía um trabalho de escritório em uma grande empresa, banco ou corporação. Era um administrador, advogado, contador ou de qualquer outra profissão que lida com papelada e burocracia. Sua vida era bastante comum, até que você descobriu algo que não devia.',
+        skills: ['Diplomacia', 'Profissão'],
+        power: 'Processo Otimizado',
+        desc: 'Sempre que faz um teste de perícia durante um teste estendido, ou uma ação para revisar documentos (físicos ou digitais), pode pagar 2 PE para receber +5 nesse teste.'
+      },
+      {
+        name: 'Investigador',
+        lore: 'Você era um investigador do governo, como um perito forense ou policial federal, ou um detetive particular. Pode ter tido contato com o paranormal em algum caso ou ter sido recrutado pela Ordem por suas habilidades de resolução de mistérios.',
+        skills: ['Investigação', 'Percepção'],
+        power: 'Faro para Pistas',
+        desc: 'Uma vez por cena, quando fizer um teste para procurar pistas, você pode gastar 1 PE para receber +5 nesse teste.'
+      },
+      {
+        name: 'Lutador',
+        lore: 'Você pratica uma arte marcial ou esporte de luta, ou cresceu em um bairro perigoso onde aprendeu briga de rua. Já quebrou muitos ossos, tanto seus quanto dos outros. Pode ter conhecido a Ordem após um torneio secreto envolvendo o paranormal ou ter sido recrutado pela sua capacidade de luta.',
+        skills: ['Luta', 'Reflexos'],
+        power: 'Mão Pesada',
+        desc: 'Você recebe +2 em rolagens de dano com ataques corpo a corpo.'
+      },
+      {
+        name: 'Magnata',
+        lore: 'Você possui muito dinheiro ou patrimônio. Pode ser o herdeiro de uma família antiga ligada ao oculto, ter criado e vendido uma empresa e agora usa sua fortuna para financiar a Ordem, ou ter ganho dinheiro de alguma forma obscura e visto sua vida confortável ruir quando descobriu a verdade sobre o paranormal.',
+        skills: ['Diplomacia', 'Pilotagem'],
+        power: 'Patrocinador da Ordem',
+        desc: 'Seu limite de crédito é sempre considerado um acima do atual.'
+      },
+      {
+        name: 'Mercenário',
+        lore: 'Você é um soldado de aluguel, que trabalha sozinho ou como parte de alguma organização que vende serviços militares. Já participou de missões de resgate e segurança privada, mas nunca enfrentou algo como o paranormal — até o dia em que seu contratante era a Ordo Realitas.',
+        skills: ['Iniciativa', 'Intimidação'],
+        power: 'Posição de Combate',
+        desc: 'No primeiro turno de cada cena de ação, você pode gastar 2 PE para receber uma ação de movimento adicional.'
+      },
+      {
+        name: 'Militar',
+        lore: 'Você serviu em uma força militar, como o exército ou a marinha. Passou muito tempo treinando com armas de fogo, até se tornar um perito no uso delas. Acostumado a obedecer ordens e manter a calma em situações extremas, você se encaixa perfeitamente nos quadros da Ordem.',
+        skills: ['Pontaria', 'Tática'],
+        power: 'Para Bellum',
+        desc: 'Você recebe +2 em rolagens de dano com armas de fogo.'
+      },
+      {
+        name: 'Operário',
+        lore: 'Pedreiro, maquinista, operador de guindaste, motorista... Você passava seus dias em um trabalho pesado, até o dia em que algo aconteceu. Talvez um acidente na obra tenha revelado um artefato paranormal, ou você tenha sido chamado para demolir um prédio assombrado.',
+        skills: ['Fortitude', 'Profissão'],
+        power: 'Ferramenta de Trabalho',
+        desc: 'Escolha uma arma simples ou tática que, a critério do mestre, poderia ser usada como ferramenta em sua profissão. Você sabe usar a arma escolhida e recebe +1 em testes de ataque, rolagens de dano e margem de ameaça com ela.'
+      },
+      {
+        name: 'Policial',
+        lore: 'Você serviu em uma força de segurança (polícia militar, civil, guarda municipal). Em alguma patrulha ou ocorrência, você se deparou com um caso que não podia ser explicado pela lei ou pela lógica comum — e que mudou sua vida para sempre.',
+        skills: ['Percepção', 'Pontaria'],
+        power: 'Patrulha',
+        desc: 'Você recebe +2 em Defesa.'
+      },
+      {
+        name: 'Religioso',
+        lore: 'Você é devoto ou sacerdote de uma fé. Independentemente da religião que pratica, se dedica a auxiliar as pessoas com problemas espirituais. A partir do momento em que teve contato com o paranormal, descobriu que o Outro Lado é muito mais real e perigoso do que imaginava.',
+        skills: ['Religião', 'Vontade'],
+        power: 'Acalentar',
+        desc: 'Você recebe +5 em testes de Religião para acalmar. Além disso, quando acalma uma pessoa, ela recebe um número de pontos de Sanidade igual a 1d6 + a sua Presença.'
+      },
+      {
+        name: 'Servidor Público',
+        lore: 'Você possuía um cargo em algum órgão do governo, passando seus dias lidando com pessoas e burocracia. Em algum momento, um documento confidencial ou um arquivo perdido acabou passando pelas suas mãos, revelando a existência do paranormal.',
+        skills: ['Intuição', 'Vontade'],
+        power: 'Espírito Cívico',
+        desc: 'Sempre que faz um teste para ajudar, você pode gastar 1 PE para aumentar o bônus concedido em +2.'
+      },
+      {
+        name: 'Teórico da Conspiração',
+        lore: 'A humanidade nunca pisou na lua. Reptilianos ocupam importantes cargos públicos. A Terra é plana... Você sempre achou que o governo e a mídia escondiam a verdade da população. Quando descobriu o paranormal, percebeu que estava certo — embora a realidade fosse ainda mais bizarra.',
+        skills: ['Investigação', 'Ocultismo'],
+        power: 'Eu Já Sabia',
+        desc: 'Você não se abala com entidades ou anomalias. Afinal, sempre soube que isso tudo existia. Você recebe resistência a dano mental igual ao seu Intelecto.'
+      },
+      {
+        name: 'T.I.',
+        lore: 'Programador, engenheiro de software ou simplesmente "o cara da informática", você tem treinamento e experiência para lidar com sistemas computadorizados. Seu talento (ou curiosidade) acabou levando você a invadir um servidor protegido da Ordem ou de algum culto.',
+        skills: ['Investigação', 'Tecnologia'],
+        power: 'Motor de Busca',
+        desc: 'A critério do Mestre, sempre que tiver acesso a internet, você pode gastar 2 PE para substituir um teste de perícia qualquer por um teste de Tecnologia.'
+      },
+      {
+        name: 'Trabalhador Rural',
+        lore: 'Você trabalhava no campo ou em áreas isoladas, como fazendeiro, pescador, lenhador ou biólogo de campo. Você conhece a natureza e os perigos do isolamento — e descobriu que, longe das luzes da cidade, o Outro Lado costuma se manifestar com muito mais liberdade.',
+        skills: ['Adestramento', 'Sobrevivência'],
+        power: 'Desbravador',
+        desc: 'Quando faz um teste de Adestramento ou Sobrevivência, você pode gastar 2 PE para receber +5 nesse teste. Além disso, você não sofre penalidade em deslocamento por terreno difícil.'
+      },
+      {
+        name: 'Trambiqueiro',
+        lore: 'Uma vida digna dá muito trabalho. Você sempre preferiu ganhar a vida na base da conversa, aplicando pequenos golpes, falsificando documentos ou jogando cartas marcadas — até o dia em que tentou enganar a pessoa errada e acabou no meio de um ritual.',
+        skills: ['Crime', 'Enganação'],
+        power: 'Impostor',
+        desc: 'Uma vez por cena, você pode gastar 2 PE para substituir um teste de perícia qualquer por um teste de Enganação.'
+      },
+      {
+        name: 'Universitário',
+        lore: 'Você era aluno de uma faculdade. Em sua rotina de estudos, festas e trabalhos acadêmicos, você acabou esbarrando em um livro proibido na biblioteca, um professor misterioso ou um evento inexplicável no campus.',
+        skills: ['Atualidades', 'Investigação'],
+        power: 'Dedicação',
+        desc: 'Você recebe +1 PE, e mais 1 PE adicional a cada NEX ímpar (15%, 25%...). Além disso, seu limite de PE por turno aumenta em 1.'
+      },
+      {
+        name: 'Vítima',
+        lore: 'Em algum momento da sua vida — talvez na infância, talvez recentemente — você foi alvo de um evento paranormal traumático. Você sobreviveu, mas as cicatrizes mentais nunca sumiram. Agora, você trabalha com a Ordem para garantir que ninguém mais passe pelo que você passou.',
+        skills: ['Reflexos', 'Vontade'],
+        power: 'Cicatrizes Psicológicas',
+        desc: 'Você recebe +1 de Sanidade para cada 5% de NEX.'
+      }
     ];
 
     const CLASSES_DB = {
@@ -3399,14 +3554,19 @@
       const classObj = CLASSES_DB[state.charClass];
 
       document.getElementById('auto-origin-class-cards').innerHTML = `
-        <div class="bg-surface border accent-border rounded-2xl p-5 space-y-2.5 flex flex-col justify-between">
-          <div class="space-y-2">
-            <div class="flex items-center justify-between">
-              <span class="text-[10px] font-mono uppercase tracking-wider accent-text font-semibold">Origem Oficial: ${originObj.name}</span>
-              <span class="text-[11px] font-mono text-zinc-400">${originObj.skills.length ? originObj.skills.join(' • ') : 'Livre'}</span>
+        <div class="bg-surface border accent-border rounded-2xl p-5 space-y-3 flex flex-col justify-between">
+          <div class="space-y-2.5">
+            <div class="space-y-1.5">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-mono uppercase tracking-wider accent-text font-semibold">Origem Oficial: ${originObj.name}</span>
+                <span class="text-[11px] font-mono text-zinc-400">${originObj.skills.length ? originObj.skills.join(' • ') : 'Livre'}</span>
+              </div>
+              <p class="text-xs text-zinc-400 italic leading-relaxed border-b border-borderSubtle/70 pb-2.5">${originObj.lore}</p>
             </div>
-            <h4 class="text-base font-bold text-white">${originObj.power}</h4>
-            <p class="text-xs text-zinc-300 leading-relaxed">${originObj.desc}</p>
+            <div class="space-y-1">
+              <h4 class="text-sm font-bold text-white">${originObj.power}</h4>
+              <p class="text-xs text-zinc-300 leading-relaxed">${originObj.desc}</p>
+            </div>
           </div>
         </div>
 
