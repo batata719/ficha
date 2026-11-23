@@ -159,29 +159,17 @@
     [data-theme="coquette"] .bg-emerald-600 {
       color: #ffffff !important;
     }
-    [data-theme="coquette"] .bg-red-950\/40,
-    [data-theme="coquette"] .bg-red-950\/30 {
-      background-color: rgba(225, 29, 72, 0.12) !important;
-      border-color: rgba(225, 29, 72, 0.35) !important;
-      color: #be123c !important;
+    /* Overrides específicos para temas (corrige o fallback branco do Tailwind CDN) */
+    .divide-borderSubtle\/50 > :not([hidden]) ~ :not([hidden]),
+    [class*="border-borderSubtle"] {
+      border-color: var(--border-subtle) !important;
     }
-    /* === CORREÇÃO DAS LINHAS BRANCAS NO C.R.I.S. E DOSSIÊ === */
-    /* Impede o fallback para currentColor quando Tailwind usa /50, /70, /80 em variáveis CSS */
-    [data-theme="cris"] .divide-borderSubtle\/50 > :not([hidden]) ~ :not([hidden]),
-    [data-theme="cris"] [class*="border-borderSubtle"] {
-      border-color: #163d29 !important;
+    [data-theme="dark"] .border-zinc-700 {
+      border-color: #3f3f46 !important;
     }
-    [data-theme="dossier"] .divide-borderSubtle\/50 > :not([hidden]) ~ :not([hidden]),
-    [data-theme="dossier"] [class*="border-borderSubtle"] {
-      border-color: #c5b696 !important;
-    }
-    [data-theme="light"] .divide-borderSubtle\/50 > :not([hidden]) ~ :not([hidden]),
-    [data-theme="light"] [class*="border-borderSubtle"] {
-      border-color: #cbd5e1 !important;
-    }
-    [data-theme="cris"] .bg-void\/40,
-    [data-theme="cris"] .bg-void\/80 {
-      background-color: rgba(3, 10, 6, 0.65) !important;
+    [data-theme="dark"] .bg-void\/40,
+    [data-theme="dark"] .bg-void\/80 {
+      background-color: rgba(9, 9, 11, 0.65) !important;
     }
 
     /* === CORREÇÃO DE CONTRASTE NO TEMA CLARO E DOSSIÊ === */
