@@ -4,6 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>Tá Jóia RPG — Ficha Digital & Compêndio v1.2</title>
+  <link rel="icon" type="image/png" href="ta joia.png">
+  <link rel="apple-touch-icon" href="ta joia.png">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
   <script src="script.js" defer></script>
@@ -26,12 +28,13 @@
 <body class="min-h-screen flex flex-col selection:bg-purple-500/30 selection:text-white">
 
   <!-- TOP UTILITY BAR -->
-  <div class="bg-surface border-b border-borderSubtle px-4 py-2 text-xs text-zinc-400">
+  <div class="site-utility-bar bg-surface border-b border-borderSubtle px-4 py-2 text-xs text-zinc-400">
     <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
       <div class="flex items-center gap-2.5 flex-wrap">
         <button id="btn-back-hub" onclick="openHubScreen()" class="hidden px-2.5 py-1 rounded-md accent-soft-bg accent-text border accent-border font-semibold hover:brightness-110 transition flex items-center gap-1.5">
           <span>←</span> <span>Arquivo de Agentes</span>
         </button>
+        <img src="ta joia.png" alt="Logo Tá Jóia" class="w-8 h-8 sm:w-9 sm:h-9 rounded-full object-cover border border-borderSubtle shrink-0">
         <span class="inline-block w-2 h-2 rounded-full accent-bg animate-pulse"></span>
         <span class="font-mono tracking-wider uppercase text-zinc-300 font-semibold">Tá Jóia RPG // Dossiê & Compêndio v1.2</span>
         <span id="save-indicator" class="text-[11px] text-emerald-400/90 hidden sm:inline">• Salvo localmente</span>
@@ -78,20 +81,23 @@
   <!-- ==================== HOME / AGENTS HUB VIEW ==================== -->
   <section id="hub-view" class="flex-1 max-w-7xl w-full mx-auto px-4 py-8 space-y-6">
     <!-- Hero Banner -->
-    <div class="bg-surface border border-borderSubtle rounded-3xl p-6 sm:p-8 flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative overflow-hidden">
-      <div class="space-y-2 max-w-2xl relative z-10">
-        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-void border border-borderSubtle text-[11px] font-mono text-zinc-300">
-          <span class="w-2 h-2 rounded-full bg-purple-500"></span>
-          <span>BASE DE DADOS CENTRAL // ACESSO AUTORIZADO</span>
+    <div class="hub-hero bg-surface border border-borderSubtle rounded-3xl p-6 sm:p-8 flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative overflow-hidden">
+      <div class="hub-hero-main flex items-center gap-5 max-w-3xl relative z-10">
+        <img src="ta joia.png" alt="Logo oficial Tá Jóia" class="hub-hero-logo w-24 h-24 sm:w-32 sm:h-32 rounded-full object-cover border-2 border-borderStrong shadow-xl shrink-0">
+        <div class="hub-hero-copy space-y-2">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-void border border-borderSubtle text-[11px] font-mono text-zinc-300">
+            <span class="w-2 h-2 rounded-full bg-purple-500"></span>
+            <span>BASE DE DADOS CENTRAL // ACESSO AUTORIZADO</span>
+          </div>
+          <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-white">Arquivo de Agentes do Tá Jóia</h1>
+          <p class="text-xs sm:text-sm text-zinc-400 leading-relaxed">
+            Gerencie múltiplas fichas de agentes com evolução automática de NEX, treinamentos de origem e classe, grimório ritualístico completo e inventário por patente.
+          </p>
         </div>
-        <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-white">Arquivo de Agentes do Tá Jóia</h1>
-        <p class="text-xs sm:text-sm text-zinc-400 leading-relaxed">
-          Gerencie múltiplas fichas de agentes com evolução automática de NEX, treinamentos de origem e classe, grimório ritualístico completo e inventário por patente.
-        </p>
       </div>
 
-      <div class="flex flex-wrap items-center gap-3 relative z-10">
-        <button onclick="openGuidedWizardModal()" class="px-5 py-3 rounded-2xl accent-bg hover:brightness-110 text-white text-sm font-semibold shadow-lg transition flex items-center gap-2">
+      <div class="hub-hero-actions flex flex-wrap items-center gap-3 relative z-10">
+        <button onclick="openGuidedWizardModal()" class="px-5 py-3 rounded-2xl accent-bg hover:brightness-110 text-white text-sm font-semibold shadow-lg transition flex items-center justify-center gap-2">
           <span>✨</span> <span>Criação Guiada (Passo a Passo)</span>
         </button>
         <button onclick="openNewAgentModal()" class="px-4 py-3 rounded-2xl bg-elevated hover:bg-zinc-800 border border-borderSubtle text-zinc-200 text-xs font-semibold transition flex items-center gap-1.5">
