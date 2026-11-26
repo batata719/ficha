@@ -34,7 +34,9 @@
         <button id="btn-back-hub" onclick="openHubScreen()" class="hidden px-2.5 py-1 rounded-md accent-soft-bg accent-text border accent-border font-semibold hover:brightness-110 transition flex items-center gap-1.5">
           <span>←</span> <span>Arquivo de Agentes</span>
         </button>
-        <img src="ta joia.png" alt="Logo Tá Jóia" class="w-8 h-8 sm:w-9 sm:h-9 rounded-full object-cover border border-borderSubtle shrink-0">
+        <span class="coquette-logo-anchor relative inline-flex shrink-0">
+          <img src="ta joia.png" alt="Logo Tá Jóia" class="w-8 h-8 sm:w-9 sm:h-9 rounded-full object-cover border border-borderSubtle shrink-0">
+        </span>
         <span class="inline-block w-2 h-2 rounded-full accent-bg animate-pulse"></span>
         <span class="font-mono tracking-wider uppercase text-zinc-300 font-semibold">Tá Jóia RPG // Dossiê & Compêndio v1.2</span>
         <span id="save-indicator" class="text-[11px] text-emerald-400/90 hidden sm:inline">• Salvo localmente</span>
@@ -47,7 +49,7 @@
             class="bg-void border border-borderSubtle focus:border-zinc-500 rounded-md px-2 py-1 text-xs text-white outline-none max-w-[170px]">
           </select>
         </div>
-        <select id="site-theme-select" onchange="setSiteTheme(this.value)" title="Tema Visual" class="bg-elevated border border-borderSubtle text-zinc-200 text-xs font-medium rounded-lg px-2 py-1.5 focus:outline-none focus:border-borderStrong cursor-pointer">
+        <select id="site-theme-select" onchange="setSiteTheme(this.value)" title="Tema Visual" class="bg-elevated border border-borderSubtle text-zinc-200 text-xs font-medium rounded-lg px-2 py-1 focus:outline-none focus:border-borderStrong cursor-pointer">
   <option value="dark">Escuro</option>
   <option value="light">Claro</option>
   <option value="dossier">Dossiê</option>
@@ -86,7 +88,9 @@
     <!-- Hero Banner -->
     <div class="hub-hero bg-surface border border-borderSubtle rounded-3xl p-6 sm:p-8 flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative overflow-hidden">
       <div class="hub-hero-main flex items-center gap-5 max-w-3xl relative z-10">
-        <img src="ta joia.png" alt="Logo oficial Tá Jóia" class="hub-hero-logo w-24 h-24 sm:w-32 sm:h-32 rounded-full object-cover border-2 border-borderStrong shadow-xl shrink-0">
+        <span class="coquette-logo-anchor relative inline-flex shrink-0">
+          <img src="ta joia.png" alt="Logo oficial Tá Jóia" class="hub-hero-logo w-24 h-24 sm:w-32 sm:h-32 rounded-full object-cover border-2 border-borderStrong shadow-xl shrink-0">
+        </span>
         <div class="hub-hero-copy space-y-2">
           <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-void border border-borderSubtle text-[11px] font-mono text-zinc-300">
             <span class="w-2 h-2 rounded-full bg-purple-500"></span>
@@ -180,7 +184,7 @@
         </button>
       </div>
       <!-- Row 1: Identity & Progression Selectors -->
-      <div id="header-identity-fields" class="hidden md:grid grid-cols-1 lg:grid-cols-12 gap-3 items-end">
+      <div id="header-identity-fields" class="hidden md:grid grid-cols-1 lg:grid-cols-12 gap-3 items-start">
         
         <!-- Name, Player, Origin -->
         <div class="lg:col-span-6 grid grid-cols-1 sm:grid-cols-12 gap-2.5">
@@ -253,7 +257,7 @@
             <div class="col-span-2">
               <label class="block text-[10px] uppercase tracking-wider text-zinc-500 font-semibold mb-1">NEX</label>
               <select id="char-nex" onchange="updateField('nex', parseInt(this.value))"
-                class="w-full bg-void border accent-border rounded-lg px-1.5 py-1.5 text-xs font-mono font-bold text-white outline-none transition">
+                class="w-full bg-void border border-borderSubtle focus:border-zinc-500 rounded-lg px-1.5 py-1.5 text-xs font-mono font-bold text-white outline-none transition">
               </select>
             </div>
             <div>

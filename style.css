@@ -81,6 +81,25 @@
       background-color: rgba(255, 228, 236, 0.65) !important;
     }
 
+    [data-theme="coquette"] .coquette-logo-anchor::after,
+    [data-theme="coquette"] .agent-avatar-decoration::after {
+      content: "🎀";
+      position: absolute;
+      top: -0.3rem;
+      right: -0.35rem;
+      z-index: 1;
+      font-size: 0.8rem;
+      line-height: 1;
+      pointer-events: none;
+      filter: drop-shadow(0 1px 2px rgba(131, 24, 67, 0.35));
+    }
+
+    [data-theme="coquette"] .coquette-logo-anchor::after,
+    [data-theme="coquette"] .agent-avatar-decoration--round::after {
+      top: 0.15rem;
+      right: 0.45rem;
+    }
+
     /* Lacinhos decorativos nos painéis e cabeçalho do tema Coquette */
     [data-theme="coquette"] header::after {
       content: " 🎀";
@@ -213,6 +232,11 @@
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
+    #header-identity-fields input,
+    #header-identity-fields select {
+      height: 2rem;
+    }
+
     /* === MOBILE-FIRST & SAFE AREA === */
     @media (max-width: 767px) {
       input[type="text"],
@@ -291,7 +315,7 @@
       .site-utility-bar > div > div:first-child {
         width: 100%;
       }
-      .site-utility-bar > div > div:first-child > img {
+      .site-utility-bar > div > div:first-child > .coquette-logo-anchor > img {
         width: 2.25rem;
         height: 2.25rem;
       }

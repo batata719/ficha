@@ -305,9 +305,11 @@
         : '';
       const theme = ELEMENT_THEMES[agent.affinity] || ELEMENT_THEMES['Nenhuma'];
       const safeInitials = initials.replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
-      return avatar
+      const avatarMarkup = avatar
         ? `<img src="${avatar}" alt="Foto do agente" class="${sizeClass} ${shapeClass} object-cover shrink-0 border" />`
         : `<div class="${sizeClass} ${shapeClass} flex items-center justify-center font-mono font-bold text-sm shrink-0 border" style="background:${theme.soft}; border-color:${theme.border}; color:${theme.accent}">${safeInitials}</div>`;
+      const roundDecorationClass = shapeClass === 'rounded-full' ? ' agent-avatar-decoration--round' : '';
+      return `<span class="agent-avatar-decoration${roundDecorationClass} relative inline-flex shrink-0">${avatarMarkup}</span>`;
     }
 
     function applyRemoteAgentToRoster(agent) {
