@@ -506,6 +506,94 @@
     }
 
     // ==================== IMPORT / EXPORT / RESET ====================
+    function encodeAgentForShare(agent) {
+      const bytes = new TextEncoder().encode(JSON.stringify(agent));
+      let binary = '';
+      for (let offset = 0; offset < bytes.length; offset += 0x8000) {
+        binary += String.fromCharCode(...bytes.subarray(offset, offset + 0x8000));
+      }
+      return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    }
+
+    async function shareAgentById(agentId) {
+      let target = rosterData.agents.find(agent => agent.id === agentId);
+      if (!target) {
+        showToast('Agente Não Encontrado', 'Não foi possível gerar um link para esta ficha.', 'ERRO');
+        return;
+      }
+      if (state.id === agentId) {
+        saveState();
+        target = rosterData.agents.find(agent => agent.id === agentId);
+      }
+
+      const shareUrl = new URL(window.location.href);
+      shareUrl.hash = `agente=${encodeAgentForShare(target)}`;
+
+      try {
+        await navigator.clipboard.writeText(shareUrl.href);
+      } catch {
+        try {
+          const copyField = document.createElement('textarea');
+          copyField.value = shareUrl.href;
+          copyField.setAttribute('readonly', '');
+          copyField.style.position = 'fixed';
+          copyField.style.opacity = '0';
+          document.body.appendChild(copyField);
+          let copied;
+          try {
+            copyField.select();
+            copied = document.execCommand('copy');
+          } finally {
+            copyField.remove();
+          }
+          if (!copied) throw new Error('O navegador recusou a cópia do link.');
+        } catch (error) {
+          console.error('Erro ao copiar link do agente:', error);
+          showToast('Erro ao Compartilhar', 'Não foi possível copiar o link. Verifique a permissão da área de transferência.', 'ERRO');
+          return;
+        }
+      }
+
+      showToast('Link Copiado', `Link da ficha de ${target.name || 'agente'} pronto para compartilhar.`, '🔗');
+    }
+
+    function importAgentFromShareLink() {
+      const encodedAgent = new URLSearchParams(window.location.hash.slice(1)).get('agente');
+      if (!encodedAgent) return false;
+
+      try {
+        const base64 = encodedAgent.replace(/-/g, '+').replace(/_/g, '/');
+        const binary = atob(base64.padEnd(Math.ceil(base64.length / 4) * 4, '='));
+        const bytes = Uint8Array.from(binary, character => character.charCodeAt(0));
+        const sharedAgent = JSON.parse(new TextDecoder().decode(bytes));
+        if (!sharedAgent || typeof sharedAgent !== 'object' || Array.isArray(sharedAgent)) {
+          throw new Error('Conteúdo da ficha inválido.');
+        }
+
+        const importedAgent = getDefaultState({
+          ...sharedAgent,
+          id: generateAgentId(),
+          updatedAt: Date.now()
+        });
+        const importedRoster = {
+          ...rosterData,
+          agents: [importedAgent, ...rosterData.agents],
+          activeId: importedAgent.id,
+          view: 'sheet'
+        };
+        localStorage.setItem(ROSTER_STORAGE_KEY, JSON.stringify(importedRoster));
+        rosterData = importedRoster;
+        state = importedAgent;
+        history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
+        showToast('Ficha Importada', `Agente "${importedAgent.name || 'Sem Nome'}" adicionado ao arquivo.`, '🔗');
+        return true;
+      } catch (error) {
+        console.error('Erro ao importar agente pelo link:', error);
+        showToast('Link Inválido', 'Não foi possível importar a ficha compartilhada.', 'ERRO');
+        return false;
+      }
+    }
+
     function exportSingleAgentById(agentId) {
       const target = rosterData.agents.find(a => a.id === agentId);
       if (!target) return;

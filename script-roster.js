@@ -358,6 +358,7 @@
       document.getElementById('quick-agent-switcher-wrap').classList.toggle('hidden', isHub);
       document.getElementById('quick-agent-switcher-wrap').classList.toggle('flex', !isHub);
       document.getElementById('btn-export-single').classList.toggle('hidden', isHub);
+      document.getElementById('btn-share-single').classList.toggle('hidden', isHub);
       document.getElementById('btn-reset-single').classList.toggle('hidden', isHub);
 
       if (isHub) {
@@ -515,6 +516,10 @@
                 <button onclick="exportSingleAgentById('${ag.id}')" title="Exportar JSON desta ficha"
                   class="px-2.5 py-2 rounded-xl bg-elevated hover:bg-zinc-800 border border-borderSubtle text-xs text-zinc-300 transition">
                   💾
+                </button>
+                <button onclick="shareAgentById('${ag.id}')" title="Compartilhar ficha por link"
+                  class="px-2.5 py-2 rounded-xl bg-elevated hover:bg-zinc-800 border border-borderSubtle text-xs text-zinc-300 transition">
+                  🔗
                 </button>
                 <button onclick="deleteAgent('${ag.id}')" title="Excluir Ficha"
                   class="px-2.5 py-2 rounded-xl bg-red-950/30 hover:bg-red-900/50 border border-red-900/40 text-xs text-red-300 transition">

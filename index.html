@@ -67,6 +67,9 @@
         <button id="btn-export-single" onclick="exportJSON()" class="hidden px-2.5 py-1 rounded-md bg-elevated hover:bg-zinc-800 border border-borderSubtle text-zinc-300 transition">
           Exportar JSON
         </button>
+        <button id="btn-share-single" onclick="shareAgentById(state.id)" class="hidden px-2.5 py-1 rounded-md bg-elevated hover:bg-zinc-800 border border-borderSubtle text-zinc-300 transition">
+          Compartilhar link
+        </button>
         <label class="px-2.5 py-1 rounded-md bg-elevated hover:bg-zinc-800 border border-borderSubtle text-zinc-300 transition cursor-pointer">
           Importar JSON
           <input type="file" accept=".json" onchange="importJSON(event)" class="hidden" />

@@ -557,6 +557,7 @@
     }
     // ==================== INITIALIZATION ====================
     window.addEventListener('DOMContentLoaded', () => {
+      importAgentFromShareLink();
       initSiteTheme();
       initStaticDropdowns();
       applyViewVisibility();

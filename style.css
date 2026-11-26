@@ -223,6 +223,9 @@
       }
       body {
         padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
+        background-image:
+          radial-gradient(circle at 50% -10%, var(--accent-soft), transparent 18rem),
+          linear-gradient(180deg, var(--bg-void), var(--bg-void));
       }
       #toast-container {
         top: 0.75rem;
@@ -230,12 +233,14 @@
       }
 
       #hub-view {
-        padding: 1rem 0.75rem 1.5rem;
+        padding: 0.75rem 0.75rem 1.5rem;
+        gap: 0.75rem;
       }
       .hub-hero {
         padding: 1rem;
         gap: 1rem;
         border-radius: 1.25rem;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.14);
       }
       .hub-hero-main {
         align-items: flex-start;
@@ -272,7 +277,13 @@
         justify-content: center;
       }
       .site-utility-bar {
-        padding-inline: 0.75rem;
+        position: sticky;
+        top: 0;
+        z-index: 45;
+        padding: 0.5rem 0.75rem;
+        background: color-mix(in srgb, var(--bg-surface) 94%, transparent);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
       }
       .site-utility-bar > div {
         gap: 0.5rem;
@@ -280,27 +291,103 @@
       .site-utility-bar > div > div:first-child {
         width: 100%;
       }
+      .site-utility-bar > div > div:first-child > img {
+        width: 2.25rem;
+        height: 2.25rem;
+      }
       .site-utility-bar > div > div:first-child > .animate-pulse {
         display: none;
+      }
+      .site-utility-bar > div > div:first-child > span.font-mono {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
       .site-utility-bar > div > div:last-child {
         display: grid;
         width: 100%;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 0.5rem;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.375rem;
       }
       .site-utility-bar > div > div:last-child > * {
         width: 100%;
+        min-height: 2.25rem;
         justify-content: center;
+        padding-inline: 0.25rem;
+        text-align: center;
+      }
+      .site-utility-bar button {
+        border-radius: 0.65rem;
+      }
+      .site-utility-bar button > span.hidden {
+        display: none;
+      }
+      .site-utility-bar > div > div:last-child > label,
+      .site-utility-bar #btn-export-single,
+      .site-utility-bar #btn-reset-single,
+      #quick-agent-switcher-wrap {
+        display: none !important;
+      }
+      #hub-view > div:nth-of-type(2) > div:first-child {
+        gap: 0.375rem;
+      }
+      #hub-view > div:nth-of-type(2) > div:first-child > div {
+        border-radius: 0.875rem;
+        padding: 0.625rem 0.25rem;
+      }
+      #hub-view > div:nth-of-type(2) > div:first-child > div > span:first-child {
+        font-size: 0.58rem;
+      }
+      #hub-view > div:nth-of-type(2) > div:first-child > div > span:last-child {
+        font-size: 1.125rem;
+      }
+      #hub-view > div:nth-of-type(2) > div:last-child {
+        border-radius: 1rem;
+        background: color-mix(in srgb, var(--bg-surface) 92%, transparent);
       }
       #hub-search {
         flex-basis: 100%;
         min-width: 0 !important;
+        border-radius: 0.875rem;
       }
       #hub-filter-class,
       #hub-filter-affinity {
         flex: 1 1 calc(50% - 0.25rem);
         min-width: 0;
+        border-radius: 0.875rem;
+      }
+      #hub-agents-grid {
+        gap: 0.75rem;
+      }
+      #hub-agents-grid > div,
+      #hub-agents-grid > button {
+        min-height: 0;
+        border-radius: 1.125rem;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+      }
+      #hub-agents-grid > div {
+        padding: 1rem;
+      }
+      #sheet-view > header {
+        top: 5rem;
+      }
+      #mobile-bottom-nav {
+        margin: 0 0.5rem;
+        bottom: calc(0.5rem + env(safe-area-inset-bottom));
+        width: calc(100% - 1rem);
+        border: 1px solid var(--border-subtle);
+        border-radius: 1.25rem;
+        padding: 0.375rem 0.25rem;
+        background: color-mix(in srgb, var(--bg-surface) 92%, transparent);
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.38);
+      }
+      #mobile-bottom-nav .mob-tab-btn {
+        min-height: 3.25rem;
+        border-radius: 0.9rem;
+      }
+      #mobile-bottom-nav .tab-active {
+        border-bottom: 0;
+        border-radius: 0.9rem;
       }
     }
 
