@@ -277,8 +277,8 @@ window.__multiplayerReady.then(() => (async () => {
       function showObsDiagnostic(msg) {
         if (currentObsAgent) return;
         stage.innerHTML = `
-          <div class="skin-dossier-card p-4 max-w-md obs-font-typewriter text-xs space-y-1">
-            <div class="obs-font-stamp font-bold text-sm text-[#7f1d1d]">AGUARDANDO SINAL DA FICHA...</div>
+          <div class="skin-dossier-card p-4 max-w-md obs-font-typewriter text-sm space-y-1">
+            <div class="obs-font-stamp font-bold text-base text-[#7f1d1d]">AGUARDANDO SINAL DA FICHA...</div>
             <p class="text-[#3b3129]">${msg}</p>
           </div>
         `;
@@ -299,10 +299,10 @@ window.__multiplayerReady.then(() => (async () => {
         activeRollHtml = `
           <div class="obs-roll-note mb-3 px-4 py-2.5 ${skin.rollCardClass} flex items-center justify-between gap-3">
             <div class="min-w-0">
-              <div class="text-xs ${skin.titleFont} uppercase tracking-wide truncate" style="color:${skin.titleColor}">${rollEvent.title}</div>
-              <div class="text-[11px] ${skin.monoFont} truncate" style="color:${skin.subTextColor}">${rollEvent.detail}</div>
+              <div class="text-sm ${skin.titleFont} uppercase tracking-wide truncate" style="color:${skin.titleColor}">${rollEvent.title}</div>
+              <div class="text-[13px] ${skin.monoFont} truncate" style="color:${skin.subTextColor}">${rollEvent.detail}</div>
             </div>
-            <div class="text-3xl ${skin.titleFont} font-bold pl-3 border-l border-dashed border-current/30"
+            <div class="text-4xl ${skin.titleFont} font-bold pl-3 border-l border-dashed border-current/30"
                  style="color: ${resultColor};">
               ${rollEvent.result}
             </div>
@@ -402,21 +402,18 @@ window.__multiplayerReady.then(() => (async () => {
         const equippedWeapons = getEquippedObsWeapons(ag);
         const weaponTileSizeClass = layoutMode === "webcam" ? "w-32 h-32" : "w-[270px] h-[270px]";
         const weaponTileOffsetClass = layoutMode === "webcam" ? "mt-4" : "mt-8";
-        const weaponIconSizeClass = layoutMode === "webcam" ? "text-2xl" : "text-5xl";
-        const weaponNameSizeClass = layoutMode === "webcam" ? "text-[11px]" : "text-lg";
+        const weaponNameSizeClass = layoutMode === "webcam" ? "text-lg" : "text-[26px]";
         const weaponCardsHtml = equippedWeapons.length ? `
           <div class="flex shrink-0 flex-col gap-2 ${weaponTileOffsetClass}">
             ${equippedWeapons.map(weapon => {
               const ammoLow = weapon.usesAmmo && weapon.current <= Math.ceil(weapon.max * 0.25);
-              const icon = weapon.usesAmmo ? "🔫" : "⚔️";
               return `
                 <div class="${weaponTileSizeClass} shrink-0 relative flex flex-col items-center justify-center gap-2 p-3 text-center ${skin.cardClass}">
                   ${skin.hasTape ? `<div class="obs-tape-strip absolute -top-2.5 left-1/2 -translate-x-1/2 z-10 w-20 h-4 -rotate-2"></div>` : ""}
-                  <span class="${weaponIconSizeClass} leading-none">${icon}</span>
-                  <span class="w-full ${weaponNameSizeClass} font-bold leading-tight break-words line-clamp-2" style="color:${skin.titleColor}" title="${weapon.name}">
+                  <span class="w-full ${weaponNameSizeClass} ${skin.titleFont} font-bold leading-tight break-words line-clamp-2" style="color:${skin.titleColor}" title="${weapon.name}">
                     ${weapon.name}
                   </span>
-                  <span class="${layoutMode === "webcam" ? "text-[10px]" : "text-sm"} font-mono font-bold" style="color:${weapon.usesAmmo && weapon.current === 0 ? '#ef4444' : ammoLow ? '#f59e0b' : skin.subTextColor}">
+                  <span class="${weapon.usesAmmo ? (layoutMode === "webcam" ? "text-lg" : "text-xl") : (layoutMode === "webcam" ? "text-sm" : "text-lg")} font-mono font-bold" style="color:${weapon.usesAmmo && weapon.current === 0 ? '#ef4444' : ammoLow ? '#f59e0b' : skin.subTextColor}">
                     ${weapon.usesAmmo ? `${weapon.current}/${weapon.max}` : "EQUIPADA"}
                   </span>
                 </div>
@@ -447,7 +444,7 @@ window.__multiplayerReady.then(() => (async () => {
                       ${photoHtml}
                     </div>
                     ${showNex && skin.nexInsidePolaroid ? `
-                      <span class="absolute bottom-1 left-2 right-2 text-center text-[10px] ${skin.monoFont} font-bold tracking-wider" style="color:${skin.subTextColor}">
+                      <span class="absolute bottom-1 left-2 right-2 text-center text-sm ${skin.monoFont} font-bold tracking-wider" style="color:${skin.subTextColor}">
                         NEX ${ag.nex || 5}%
                       </span>` : ""}
                   </div>
@@ -456,17 +453,17 @@ window.__multiplayerReady.then(() => (async () => {
                     <div class="flex items-start justify-between gap-2 ${skin.dividerClass} pb-1.5">
                       <div class="min-w-0 flex-1">
                         ${showName ? `
-                          <h1 class="text-[28px] ${skin.titleFont} font-extrabold truncate leading-none tracking-tight" style="color:${skin.titleColor}">
+                          <h1 class="text-[32px] ${skin.titleFont} font-extrabold truncate leading-none tracking-tight" style="color:${skin.titleColor}">
                             ${ag.name || "Agente"}
                           </h1>` : ""}
                         ${showNex && !skin.nexInsidePolaroid ? `
-                          <span class="text-[11px] ${skin.monoFont} font-bold tracking-wider block mt-1" style="color:${skin.subTextColor}">
+                          <span class="text-sm ${skin.monoFont} font-bold tracking-wider block mt-1" style="color:${skin.subTextColor}">
                             ${ag.charClass ? `${ag.charClass} • ` : ""}NEX ${ag.nex || 5}%
                           </span>` : ""}
                       </div>
 
                       ${statusStamp ? `
-                        <span class="px-2 py-0.5 text-[10px] ${skin.titleFont} font-bold uppercase tracking-wider shrink-0 self-center ${skin.stampBoxClass}">
+                        <span class="px-2 py-0.5 text-sm ${skin.titleFont} font-bold uppercase tracking-wider shrink-0 self-center ${skin.stampBoxClass}">
                           ${statusStamp}
                         </span>` : ""}
                     </div>
@@ -474,10 +471,10 @@ window.__multiplayerReady.then(() => (async () => {
                     ${showBars ? `
                       <div class="space-y-2 ${skin.monoFont}">
                         <div>
-                          <div class="flex items-baseline justify-between text-xs mb-0.5">
+                          <div class="flex items-baseline justify-between text-sm mb-0.5">
                             <span class="font-bold tracking-wider" style="color:${skin.pvLabelColor}">VITALIDADE (PV)</span>
-                            <span class="text-base font-bold" style="color:${skin.titleColor}">
-                              ${curPv}<span class="text-xs font-normal" style="color:${skin.subTextColor}">/${vitals.maxPv}</span>
+                            <span class="text-lg font-bold" style="color:${skin.titleColor}">
+                              ${curPv}<span class="text-sm font-normal" style="color:${skin.subTextColor}">/${vitals.maxPv}</span>
                             </span>
                           </div>
                           <div class="w-full h-3 ${skin.barTrackClass}">
@@ -487,10 +484,10 @@ window.__multiplayerReady.then(() => (async () => {
 
                         <div class="grid grid-cols-2 gap-3">
                           <div>
-                            <div class="flex items-baseline justify-between text-xs mb-0.5">
+                            <div class="flex items-baseline justify-between text-sm mb-0.5">
                               <span class="font-bold" style="color:${skin.peLabelColor}">ESFORÇO</span>
-                              <span class="text-sm font-bold" style="color:${skin.titleColor}">
-                                ${curPe}<span class="text-[11px] font-normal" style="color:${skin.subTextColor}">/${vitals.maxPe}</span>
+                              <span class="text-base font-bold" style="color:${skin.titleColor}">
+                                ${curPe}<span class="text-sm font-normal" style="color:${skin.subTextColor}">/${vitals.maxPe}</span>
                               </span>
                             </div>
                             <div class="w-full h-2.5 ${skin.barTrackClass}">
@@ -499,10 +496,10 @@ window.__multiplayerReady.then(() => (async () => {
                           </div>
 
                           <div>
-                            <div class="flex items-baseline justify-between text-xs mb-0.5">
+                            <div class="flex items-baseline justify-between text-sm mb-0.5">
                               <span class="font-bold" style="color:${skin.sanLabelColor}">SANIDADE</span>
-                              <span class="text-sm font-bold" style="color:${skin.titleColor}">
-                                ${curSan}<span class="text-[11px] font-normal" style="color:${skin.subTextColor}">/${vitals.maxSan}</span>
+                              <span class="text-base font-bold" style="color:${skin.titleColor}">
+                                ${curSan}<span class="text-sm font-normal" style="color:${skin.subTextColor}">/${vitals.maxSan}</span>
                               </span>
                             </div>
                             <div class="w-full h-2.5 ${skin.barTrackClass}">
@@ -545,17 +542,17 @@ window.__multiplayerReady.then(() => (async () => {
                     </div>
 
                     ${statusStamp ? `
-                      <div class="absolute top-4 right-4 px-2.5 py-1 text-xs ${skin.titleFont} font-bold uppercase tracking-wider shadow ${skin.stampBoxClass}">
+                      <div class="absolute top-4 right-4 px-2.5 py-1 text-sm ${skin.titleFont} font-bold uppercase tracking-wider shadow ${skin.stampBoxClass}">
                         ${statusStamp}
                       </div>` : ""}
 
                     <div class="mt-2.5 flex items-baseline justify-between gap-2 px-1">
                       ${showName ? `
-                        <h1 class="text-[28px] ${skin.titleFont} font-extrabold truncate leading-none tracking-tight" style="color:${skin.titleColor}">
+                        <h1 class="text-[32px] ${skin.titleFont} font-extrabold truncate leading-none tracking-tight" style="color:${skin.titleColor}">
                           ${ag.name || "Agente"}
                         </h1>` : `<span></span>`}
                       ${showNex ? `
-                        <span class="text-xs ${skin.monoFont} font-bold shrink-0" style="color:${skin.subTextColor}">
+                        <span class="text-sm ${skin.monoFont} font-bold shrink-0" style="color:${skin.subTextColor}">
                           NEX ${ag.nex || 5}%
                         </span>` : ""}
                     </div>
@@ -564,9 +561,9 @@ window.__multiplayerReady.then(() => (async () => {
                   ${showBars ? `
                     <div class="space-y-2 ${skin.monoFont} pt-0.5">
                       <div>
-                        <div class="flex items-baseline justify-between text-xs mb-0.5">
+                        <div class="flex items-baseline justify-between text-sm mb-0.5">
                           <span class="font-bold" style="color:${skin.pvLabelColor}">PV</span>
-                          <span class="text-base font-bold" style="color:${skin.titleColor}">${curPv}<span class="text-xs font-normal" style="color:${skin.subTextColor}">/${vitals.maxPv}</span></span>
+                          <span class="text-lg font-bold" style="color:${skin.titleColor}">${curPv}<span class="text-sm font-normal" style="color:${skin.subTextColor}">/${vitals.maxPv}</span></span>
                         </div>
                         <div class="w-full h-3 ${skin.barTrackClass}">
                           <div class="h-full transition-all duration-300" style="width:${pvPct}%; background-color:${skin.pvBar};"></div>
@@ -575,9 +572,9 @@ window.__multiplayerReady.then(() => (async () => {
 
                       <div class="grid grid-cols-2 gap-3">
                         <div>
-                          <div class="flex items-baseline justify-between text-xs mb-0.5">
+                          <div class="flex items-baseline justify-between text-sm mb-0.5">
                             <span class="font-bold" style="color:${skin.peLabelColor}">PE</span>
-                            <span class="text-sm font-bold" style="color:${skin.titleColor}">${curPe}<span class="text-[11px] font-normal" style="color:${skin.subTextColor}">/${vitals.maxPe}</span></span>
+                            <span class="text-base font-bold" style="color:${skin.titleColor}">${curPe}<span class="text-sm font-normal" style="color:${skin.subTextColor}">/${vitals.maxPe}</span></span>
                           </div>
                           <div class="w-full h-2.5 ${skin.barTrackClass}">
                             <div class="h-full transition-all duration-300" style="width:${pePct}%; background-color:${skin.peBar};"></div>
@@ -585,9 +582,9 @@ window.__multiplayerReady.then(() => (async () => {
                         </div>
 
                         <div>
-                          <div class="flex items-baseline justify-between text-xs mb-0.5">
+                          <div class="flex items-baseline justify-between text-sm mb-0.5">
                             <span class="font-bold" style="color:${skin.sanLabelColor}">SAN</span>
-                            <span class="text-sm font-bold" style="color:${skin.titleColor}">${curSan}<span class="text-[11px] font-normal" style="color:${skin.subTextColor}">/${vitals.maxSan}</span></span>
+                            <span class="text-base font-bold" style="color:${skin.titleColor}">${curSan}<span class="text-sm font-normal" style="color:${skin.subTextColor}">/${vitals.maxSan}</span></span>
                           </div>
                           <div class="w-full h-2.5 ${skin.barTrackClass}">
                             <div class="h-full transition-all duration-300" style="width:${sanPct}%; background-color:${skin.sanBar};"></div>
