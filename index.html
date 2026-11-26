@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>Tá Jóia RPG — Ficha Digital & Compêndio v1.2</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
   <script src="script.js" defer></script>
   <script src="script-roster.js" defer></script>
   <script src="script-character.js" defer></script>
@@ -14,6 +15,7 @@
   <script src="script-obs-shared.js" defer></script>
   <script src="script-sync.js" defer></script>
   <script src="script-obs.js" defer></script>
+  <script src="script-rulebook.js" defer></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -54,6 +56,10 @@
         </button>
         <button onclick="openDiceModal()" class="px-2.5 py-1 rounded-md bg-elevated hover:bg-zinc-800 border border-borderSubtle text-zinc-200 transition flex items-center gap-1.5">
           <span>🎲</span> <span>Rolador Livre</span>
+        </button>
+        <button id="btn-open-rulebook" type="button" onclick="openRulebook()" aria-haspopup="dialog" aria-controls="modal-rulebook"
+          class="px-2.5 py-1 rounded-md bg-elevated hover:bg-zinc-800 border border-borderSubtle text-zinc-200 transition flex items-center gap-1.5">
+          <span aria-hidden="true">📖</span> <span>Livro de Regras</span>
         </button>
         <button id="btn-export-single" onclick="exportJSON()" class="hidden px-2.5 py-1 rounded-md bg-elevated hover:bg-zinc-800 border border-borderSubtle text-zinc-300 transition">
           Exportar JSON
@@ -1262,6 +1268,76 @@
         <!-- Populated by JS -->
       </div>
     </div>
+  </div>
+
+  <!-- MODAL: RULEBOOK PDF READER -->
+  <div id="modal-rulebook" class="rulebook-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="rulebook-title" aria-hidden="true">
+    <section class="rulebook-panel">
+      <header class="rulebook-header">
+        <div class="rulebook-heading">
+          <h2 id="rulebook-title">📖 Livro de Regras</h2>
+          <p>Consulte o livro sem sair da ficha</p>
+        </div>
+        <button id="rulebook-close" type="button" class="rulebook-icon-button" aria-label="Fechar livro de regras" title="Fechar (Esc)">✕</button>
+      </header>
+
+      <form id="rulebook-search-form" class="rulebook-search">
+        <label class="sr-only" for="rulebook-search-input">Buscar no livro de regras</label>
+        <input id="rulebook-search-input" type="search" placeholder="Buscar palavra-chave (ex.: Sanidade)" autocomplete="off" />
+        <button id="rulebook-search-submit" type="submit" class="rulebook-primary-button">Buscar</button>
+        <div class="rulebook-occurrence-controls">
+          <button id="rulebook-prev-result" type="button" class="rulebook-control-button" aria-label="Ocorrência anterior" title="Ocorrência anterior" disabled>↑</button>
+          <span id="rulebook-occurrence-count" aria-live="polite">0 / 0</span>
+          <button id="rulebook-next-result" type="button" class="rulebook-control-button" aria-label="Próxima ocorrência" title="Próxima ocorrência" disabled>↓</button>
+        </div>
+      </form>
+
+      <div id="rulebook-status" class="rulebook-status" role="status" aria-live="polite">
+        Abra o livro para carregar e indexar o PDF.
+      </div>
+
+      <div class="rulebook-content">
+        <aside class="rulebook-results" aria-label="Resultados da busca">
+          <h3>Resultados</h3>
+          <ol id="rulebook-results-list" class="rulebook-results-list">
+            <li class="rulebook-empty">Digite um termo para pesquisar no livro.</li>
+          </ol>
+        </aside>
+
+        <section class="rulebook-reader" aria-label="Visualizador do livro">
+          <div class="rulebook-toolbar">
+            <button id="rulebook-show-contents" type="button" class="rulebook-control-button rulebook-contents-button" aria-label="Voltar ao sumário" title="Voltar ao sumário">☷ <span>Sumário</span></button>
+            <div class="rulebook-page-controls">
+              <button id="rulebook-prev-page" type="button" class="rulebook-control-button" aria-label="Página anterior" title="Página anterior" disabled>‹</button>
+              <label for="rulebook-page-input" class="sr-only">Página atual</label>
+              <input id="rulebook-page-input" type="number" min="1" value="1" inputmode="numeric" aria-label="Número da página" disabled />
+              <span id="rulebook-page-count">/ —</span>
+              <button id="rulebook-next-page" type="button" class="rulebook-control-button" aria-label="Próxima página" title="Próxima página" disabled>›</button>
+            </div>
+            <div class="rulebook-zoom-controls" aria-label="Controles de zoom">
+              <button id="rulebook-zoom-out" type="button" class="rulebook-control-button" aria-label="Diminuir zoom" title="Diminuir zoom" disabled>−</button>
+              <span id="rulebook-zoom-label">100%</span>
+              <button id="rulebook-zoom-in" type="button" class="rulebook-control-button" aria-label="Aumentar zoom" title="Aumentar zoom" disabled>+</button>
+            </div>
+          </div>
+          <section id="rulebook-home" class="rulebook-home" aria-labelledby="rulebook-contents-title">
+            <div class="rulebook-home-heading">
+              <span aria-hidden="true">📚</span>
+              <div>
+                <h3 id="rulebook-contents-title">Sumário do livro</h3>
+                <p id="rulebook-contents-description">Escolha um capítulo para abrir diretamente nessa parte.</p>
+              </div>
+            </div>
+            <nav id="rulebook-contents-list" class="rulebook-contents-list" aria-label="Capítulos do livro">
+              <p class="rulebook-empty">Carregando o sumário…</p>
+            </nav>
+          </section>
+          <div id="rulebook-page-scroller" class="rulebook-page-scroller hidden" tabindex="0" aria-label="Página do livro">
+            <div id="rulebook-page-wrap" class="rulebook-page-wrap"></div>
+          </div>
+        </section>
+      </div>
+    </section>
   </div>
 
   <!-- FLOATING DICE ROLL TOAST CONTAINER -->
