@@ -595,6 +595,7 @@ const NEX_STEPS = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80
 
       // Armas Táticas Corpo a Corpo
       { name: 'Machadinha', type: 'Arma', cat: '0', spaces: 1, skill: 'Luta', damage: '1d6', crit: 'x3', desc: 'Arma tática leve, arremesso (curto). Corte.' },
+      { name: 'Foice Curta', type: 'Arma', cat: '0', spaces: 1, skill: 'Luta', damage: '1d6', crit: '20/x3', desc: 'Arma tática leve: ferramenta agrícola de cabo curto e lâmina curva afiada na parte interna, usada em rituais de colheita ou improvisada por sobreviventes. Ágil (usa Agilidade nos testes de ataque e no dano) e compatível com Combater com Duas Armas. Corte. Regra opcional — Enganchar: +2 em testes de manobra para derrubar ou desarmar oponentes adjacentes.' },
       { name: 'Nunchaku', type: 'Arma', cat: '0', spaces: 1, skill: 'Luta', damage: '1d8', crit: 'x2', desc: 'Arma tática leve, ágil. Impacto.' },
       { name: 'Corrente', type: 'Arma', cat: '0', spaces: 1, skill: 'Luta', damage: '1d8', crit: 'x2', desc: 'Arma tática uma mão (+2 em derrubar/desarmar). Impacto.' },
       { name: 'Espada', type: 'Arma', cat: 'I', spaces: 1, skill: 'Luta', damage: '1d8', crit: '19/x2', desc: 'Arma tática uma mão (1d10 com duas mãos). Corte.' },

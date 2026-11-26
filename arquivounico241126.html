@@ -2086,6 +2086,7 @@
 
       // Armas Táticas Corpo a Corpo
       { name: 'Machadinha', type: 'Arma', cat: '0', spaces: 1, skill: 'Luta', damage: '1d6', crit: 'x3', desc: 'Arma tática leve, arremesso (curto). Corte.' },
+      { name: 'Foice Curta', type: 'Arma', cat: '0', spaces: 1, skill: 'Luta', damage: '1d6', crit: '20/x3', desc: 'Arma tática leve: ferramenta agrícola de cabo curto e lâmina curva afiada na parte interna, usada em rituais de colheita ou improvisada por sobreviventes. Ágil (usa Agilidade nos testes de ataque e no dano) e compatível com Combater com Duas Armas. Corte. Regra opcional — Enganchar: +2 em testes de manobra para derrubar ou desarmar oponentes adjacentes.' },
       { name: 'Nunchaku', type: 'Arma', cat: '0', spaces: 1, skill: 'Luta', damage: '1d8', crit: 'x2', desc: 'Arma tática leve, ágil. Impacto.' },
       { name: 'Corrente', type: 'Arma', cat: '0', spaces: 1, skill: 'Luta', damage: '1d8', crit: 'x2', desc: 'Arma tática uma mão (+2 em derrubar/desarmar). Impacto.' },
       { name: 'Espada', type: 'Arma', cat: 'I', spaces: 1, skill: 'Luta', damage: '1d8', crit: '19/x2', desc: 'Arma tática uma mão (1d10 com duas mãos). Corte.' },
@@ -2556,6 +2557,18 @@
         setTimeout(() => { ind.textContent = '• Salvo localmente'; }, 1500);
       } catch (e) {
         console.error('Erro ao salvar ficha:', e);
+      }
+    }
+
+    function applyRemoteAgentToRoster(agent) {
+      const index = rosterData.agents.findIndex((localAgent) => localAgent.id === agent.id);
+      if (index < 0) return;
+      rosterData.agents[index] = { ...agent };
+      if (rosterData.activeId === agent.id) {
+        state = { ...getDefaultState(), ...agent };
+        refreshAll();
+      } else if (rosterData.view === 'hub') {
+        renderHub();
       }
     }
 
@@ -5194,7 +5207,8 @@
       onSnapshot,
       collection,
       deleteDoc,
-      serverTimestamp
+      serverTimestamp,
+      runTransaction
     } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     const FIREBASE_CONFIG = {
@@ -5220,6 +5234,7 @@
     let roomAgentsCache = [];
     let roomRollsCache = [];
     let inspectedAgentId = null;
+    let suppressRoomSync = false;
 
     function loadSessionMeta() {
       try {
@@ -5246,7 +5261,7 @@
         auth = getAuth(app);
         db = getFirestore(app);
 
-        onAuthStateChanged(auth, (user) => {
+        onAuthStateChanged(auth, async (user) => {
           if (user) {
             currentUser = user;
             firebaseReady = true;
@@ -5256,6 +5271,21 @@
             renderSessionModalBody();
 
             if (sessionState.roomCode && sessionState.role) {
+              if (sessionState.role === "gm") {
+                try {
+                  const roomSnap = await getDoc(doc(db, "sessions", sessionState.roomCode));
+                  if (!roomSnap.exists() || roomSnap.data().gmUid !== user.uid) {
+                    leaveSession();
+                    alertModalInfo("Apenas a conta Google que criou esta sala pode entrar como Mestre.");
+                    return;
+                  }
+                } catch (err) {
+                  console.error("[Ordo Sync] Não foi possível validar o Mestre da sala:", err);
+                  leaveSession();
+                  alertModalInfo(`Não foi possível validar o acesso de Mestre: ${err.message || err}`);
+                  return;
+                }
+              }
               connectToRoomListeners(sessionState.roomCode);
               if (sessionState.role === "player") {
                 pushActiveAgentToRoom();
@@ -5311,7 +5341,7 @@
 
     localStorage.setItem = function (key, value) {
       originalSetItem(key, value);
-      if (key === "op_agents_roster_v1" && sessionState.roomCode && sessionState.role === "player") {
+      if (!suppressRoomSync && key === "op_agents_roster_v1" && sessionState.roomCode && sessionState.role === "player") {
         clearTimeout(syncDebounceTimer);
         syncDebounceTimer = setTimeout(() => {
           pushActiveAgentToRoom();
@@ -5363,6 +5393,7 @@
 
       const payload = {
         ...activeAgent,
+        gmRevision: Number(activeAgent.gmRevision) || 0,
         ownerUid: currentUser.uid,
         playerAlias: sessionState.playerAlias || activeAgent.player || currentUser.displayName || "Jogador",
         syncedAt: Date.now()
@@ -5370,9 +5401,44 @@
 
       try {
         const agentDocRef = doc(db, "sessions", sessionState.roomCode, "agents", activeAgent.id);
-        await setDoc(agentDocRef, payload);
+        const result = await runTransaction(db, async (transaction) => {
+          const agentSnap = await transaction.get(agentDocRef);
+          const remoteAgent = agentSnap.exists() ? agentSnap.data() : null;
+          if (remoteAgent?.ownerUid && remoteAgent.ownerUid !== currentUser.uid) {
+            throw new Error("Esta ficha já pertence a outro jogador nesta sala.");
+          }
+          const localRevision = Number(activeAgent.gmRevision) || 0;
+          const remoteRevision = Number(remoteAgent?.gmRevision) || 0;
+          if (remoteAgent && remoteRevision > localRevision) {
+            return { newerRemoteAgent: remoteAgent };
+          }
+          transaction.set(agentDocRef, payload);
+          return { newerRemoteAgent: null };
+        });
+        if (result.newerRemoteAgent) applyRemoteAgentToPlayer(result.newerRemoteAgent);
       } catch (err) {
         console.error("[Ordo Sync] Erro ao enviar ficha:", err);
+        alertModalInfo(`Não foi possível sincronizar a ficha: ${err.message || err}`);
+      }
+    }
+
+    function applyRemoteAgentToPlayer(remoteAgent) {
+      if (!remoteAgent?.id || remoteAgent.ownerUid !== currentUser?.uid) return;
+      try {
+        const roster = JSON.parse(localStorage.getItem("op_agents_roster_v1") || "{}");
+        if (!Array.isArray(roster.agents)) return;
+        const index = roster.agents.findIndex((agent) => agent.id === remoteAgent.id);
+        if (index < 0 || (Number(remoteAgent.gmRevision) || 0) <= (Number(roster.agents[index].gmRevision) || 0)) return;
+
+        roster.agents[index] = { ...remoteAgent };
+        suppressRoomSync = true;
+        localStorage.setItem("op_agents_roster_v1", JSON.stringify(roster));
+        if (typeof applyRemoteAgentToRoster === "function") applyRemoteAgentToRoster(remoteAgent);
+      } catch (err) {
+        console.error("[Ordo Sync] Erro ao aplicar edição do Mestre:", err);
+        alertModalInfo(`A ficha recebeu uma edição do Mestre, mas não foi possível aplicá-la localmente: ${err.message || err}`);
+      } finally {
+        suppressRoomSync = false;
       }
     }
 
@@ -5517,6 +5583,10 @@
         alertModalInfo(`Sala "${codeInput}" não encontrada.`);
         return;
       }
+      if (snap.data().gmUid !== currentUser.uid) {
+        alertModalInfo("Apenas a conta Google que criou esta sala pode entrar como Mestre.");
+        return;
+      }
 
       sessionState = {
         roomCode: codeInput,
@@ -5558,7 +5628,13 @@
       const agentsCol = collection(db, "sessions", roomCode, "agents");
       unsubscribeRoomAgents = onSnapshot(agentsCol, (snapshot) => {
         roomAgentsCache = [];
-        snapshot.forEach((docSnap) => roomAgentsCache.push(docSnap.data()));
+        snapshot.forEach((docSnap) => {
+          const agent = docSnap.data();
+          roomAgentsCache.push(agent);
+          if (sessionState.role === "player" && agent.ownerUid === currentUser?.uid) {
+            applyRemoteAgentToPlayer(agent);
+          }
+        });
         roomAgentsCache.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
         renderSessionModalBody();
       });
@@ -5946,6 +6022,18 @@
       const trainedSkills = Object.entries(ag.skills || {})
         .filter(([, data]) => (data.rank || 0) >= 5)
         .map(([name, data]) => `${name} (+${data.rank + (data.other || 0)})`);
+      const field = (key, label, value, type = "text") => `
+        <label class="block text-[11px] text-zinc-400">${label}
+          <input name="${key}" type="${type}" value="${String(value ?? "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;")}"
+            class="mt-1 w-full bg-void border border-borderSubtle rounded-lg px-2.5 py-2 text-xs text-white outline-none" />
+        </label>
+      `;
+      const jsonField = (key, label, value) => `
+        <label class="block text-[11px] text-zinc-400">${label} (JSON)
+          <textarea name="${key}" rows="5" spellcheck="false"
+            class="mt-1 w-full bg-void border border-borderSubtle rounded-lg px-2.5 py-2 text-[11px] font-mono text-white outline-none">${JSON.stringify(value ?? (key === "skills" ? {} : []), null, 2).replace(/&/g, "&amp;").replace(/</g, "&lt;")}</textarea>
+        </label>
+      `;
 
       return `
         <div class="bg-void border border-borderSubtle rounded-2xl p-5 space-y-5">
@@ -5992,8 +6080,118 @@
               <p class="text-zinc-400 whitespace-pre-line">${ag.notes || ""}\n${ag.clues || ""}</p>
             </div>
           ` : ""}
+          <details class="bg-surface border border-purple-500/30 rounded-xl p-4">
+            <summary class="cursor-pointer text-sm font-semibold text-purple-200">✏️ Editar ficha do agente</summary>
+            <form id="gm-agent-edit-form" data-agent-id="${ag.id}" class="mt-4 space-y-4">
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                ${field("name", "Nome", ag.name)}
+                ${field("player", "Nome do jogador", ag.player || ag.playerAlias)}
+                ${field("charClass", "Classe", ag.charClass)}
+                ${field("path", "Trilha", ag.path)}
+                ${field("origin", "Origem", ag.origin)}
+                ${field("rank", "Patente", ag.rank)}
+                ${field("affinity", "Afinidade", ag.affinity)}
+                ${field("combatenteAttackSkill", "Perícia de ataque", ag.combatenteAttackSkill)}
+                ${field("combatenteDefenseSkill", "Perícia de defesa", ag.combatenteDefenseSkill)}
+                ${field("nex", "NEX (%)", ag.nex, "number")}
+                ${field("currentPv", "PV atuais", ag.currentPv ?? st.maxPv, "number")}
+                ${field("currentPe", "PE atuais", ag.currentPe ?? st.maxPe, "number")}
+                ${field("currentSan", "SAN atual", ag.currentSan ?? st.maxSan, "number")}
+                ${field("bonusPv", "Bônus PV máx.", ag.bonusPv || 0, "number")}
+                ${field("bonusPe", "Bônus PE máx.", ag.bonusPe || 0, "number")}
+                ${field("bonusSan", "Bônus SAN máx.", ag.bonusSan || 0, "number")}
+                ${field("pp", "Pontos de Prestígio", ag.pp || 0, "number")}
+                ${field("speed", "Deslocamento", ag.speed || 0, "number")}
+                ${field("defenseOther", "Bônus de Defesa", ag.defenseOther || 0, "number")}
+                ${["AGI", "FOR", "INT", "PRE", "VIG"].map((attr) => field(`attribute-${attr}`, attr, ag.attributes?.[attr] ?? 1, "number")).join("")}
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                ${field("rd", "Resistências / RD", ag.rd)}
+                ${field("proficiencies", "Proficiências", ag.proficiencies)}
+              </div>
+              <label class="block text-[11px] text-zinc-400">Notas<textarea name="notes" rows="3" class="mt-1 w-full bg-void border border-borderSubtle rounded-lg px-2.5 py-2 text-xs text-white outline-none">${String(ag.notes || "").replace(/&/g, "&amp;").replace(/</g, "&lt;")}</textarea></label>
+              <label class="block text-[11px] text-zinc-400">Pistas<textarea name="clues" rows="3" class="mt-1 w-full bg-void border border-borderSubtle rounded-lg px-2.5 py-2 text-xs text-white outline-none">${String(ag.clues || "").replace(/&/g, "&amp;").replace(/</g, "&lt;")}</textarea></label>
+              <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                ${jsonField("skills", "Perícias", ag.skills)}
+                ${jsonField("peritoSkills", "Perícias de Especialista", ag.peritoSkills)}
+                ${jsonField("inventory", "Inventário", ag.inventory)}
+                ${jsonField("abilities", "Poderes", ag.abilities)}
+                ${jsonField("rituals", "Rituais", ag.rituals)}
+              </div>
+              <div class="flex justify-end">
+                <button type="submit" class="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold">Salvar alterações no agente</button>
+              </div>
+            </form>
+          </details>
         </div>
       `;
+    }
+
+    async function saveInspectedAgentEdits(form) {
+      if (sessionState.role !== "gm" || !currentUser || !sessionState.roomCode) return;
+      const formData = new FormData(form);
+      const agentId = form.dataset.agentId;
+      const numberKeys = ["nex", "currentPv", "currentPe", "currentSan", "bonusPv", "bonusPe", "bonusSan", "pp", "speed", "defenseOther"];
+      const updates = {};
+      ["name", "player", "charClass", "path", "origin", "rank", "affinity", "combatenteAttackSkill", "combatenteDefenseSkill", "rd", "proficiencies", "notes", "clues"].forEach((key) => {
+        updates[key] = String(formData.get(key) || "").trim();
+      });
+      for (const key of numberKeys) {
+        const value = Number(formData.get(key));
+        if (!Number.isInteger(value) || (value < 0 && key !== "defenseOther")) {
+          alertModalInfo(`O campo ${key} precisa ser um número inteiro${key === "defenseOther" ? "" : " não negativo"}.`);
+          return;
+        }
+        updates[key] = value;
+      }
+      if (updates.nex > 99) {
+        alertModalInfo("O NEX deve estar entre 0 e 99.");
+        return;
+      }
+      updates.attributes = {};
+      for (const attr of ["AGI", "FOR", "INT", "PRE", "VIG"]) {
+        const value = Number(formData.get(`attribute-${attr}`));
+        if (!Number.isInteger(value) || value < 0) {
+          alertModalInfo(`O atributo ${attr} precisa ser um número inteiro não negativo.`);
+          return;
+        }
+        updates.attributes[attr] = value;
+      }
+      for (const key of ["skills", "peritoSkills", "inventory", "abilities", "rituals"]) {
+        try {
+          updates[key] = JSON.parse(String(formData.get(key)));
+          if (key === "skills" ? !updates[key] || Array.isArray(updates[key]) || typeof updates[key] !== "object" : !Array.isArray(updates[key])) {
+            throw new Error(key === "skills" ? "deve ser um objeto JSON" : "deve ser uma lista JSON");
+          }
+        } catch (err) {
+          alertModalInfo(`JSON inválido em ${key}: ${err.message || err}`);
+          return;
+        }
+      }
+
+      try {
+        const roomRef = doc(db, "sessions", sessionState.roomCode);
+        const agentRef = doc(db, "sessions", sessionState.roomCode, "agents", agentId);
+        await runTransaction(db, async (transaction) => {
+          const roomSnap = await transaction.get(roomRef);
+          if (!roomSnap.exists() || roomSnap.data().gmUid !== currentUser.uid) {
+            throw new Error("Esta conta não é o Mestre proprietário da sala.");
+          }
+          const agentSnap = await transaction.get(agentRef);
+          if (!agentSnap.exists()) throw new Error("A ficha não está mais nesta sala.");
+          const agent = agentSnap.data();
+          transaction.update(agentRef, {
+            ...updates,
+            gmRevision: (Number(agent.gmRevision) || 0) + 1,
+            gmEditedByUid: currentUser.uid,
+            gmEditedAt: Date.now()
+          });
+        });
+        alertModalInfo("Ficha atualizada. O jogador receberá as alterações automaticamente.");
+      } catch (err) {
+        console.error("[Ordo Sync] Erro ao salvar edição do Mestre:", err);
+        alertModalInfo(`Não foi possível salvar a ficha (${err.code || "erro"}): ${err.message || "Confira as regras do Firestore."}`);
+      }
     }
 
     // Delegação global de cliques para todos os botões da Mesa / Escudo do Mestre
@@ -6046,6 +6244,12 @@
       } else if (target.id === "btn-gm-back-overview") {
         inspectedAgentId = null;
         renderSessionModalBody();
+      }
+    });
+    document.addEventListener("submit", (e) => {
+      if (e.target?.id === "gm-agent-edit-form") {
+        e.preventDefault();
+        saveInspectedAgentEdits(e.target);
       }
     });
 

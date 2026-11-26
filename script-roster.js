@@ -238,6 +238,18 @@
       }
     }
 
+    function applyRemoteAgentToRoster(agent) {
+      const index = rosterData.agents.findIndex((localAgent) => localAgent.id === agent.id);
+      if (index < 0) return;
+      rosterData.agents[index] = { ...agent };
+      if (rosterData.activeId === agent.id) {
+        state = { ...getDefaultState(), ...agent };
+        refreshAll();
+      } else if (rosterData.view === 'hub') {
+        renderHub();
+      }
+    }
+
     // ==================== VIEW NAVIGATION (HUB <-> SHEET) ====================
     function openHubScreen() {
       saveState();
