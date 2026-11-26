@@ -298,7 +298,7 @@
       showToast('Foto Removida', `A foto de ${targetAgent.name || 'agente'} foi removida.`, '✓');
     }
 
-    function getAgentAvatarMarkup(agent, sizeClass = 'w-11 h-11') {
+    function getAgentAvatarMarkup(agent, sizeClass = 'w-11 h-11', shapeClass = 'rounded-xl') {
       const initials = (agent.name || 'AG').trim().split(/\s+/).slice(0, 2).map(word => word[0]?.toUpperCase() || '').join('') || 'AG';
       const avatar = typeof agent.avatar === 'string' && agent.avatar.startsWith('data:image/jpeg;base64,')
         ? agent.avatar.replace(/[&"<>]/g, character => ({ '&': '&amp;', '"': '&quot;', '<': '&lt;', '>': '&gt;' })[character])
@@ -306,8 +306,8 @@
       const theme = ELEMENT_THEMES[agent.affinity] || ELEMENT_THEMES['Nenhuma'];
       const safeInitials = initials.replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
       return avatar
-        ? `<img src="${avatar}" alt="Foto do agente" class="${sizeClass} rounded-xl object-cover shrink-0 border" />`
-        : `<div class="${sizeClass} rounded-xl flex items-center justify-center font-mono font-bold text-sm shrink-0 border" style="background:${theme.soft}; border-color:${theme.border}; color:${theme.accent}">${safeInitials}</div>`;
+        ? `<img src="${avatar}" alt="Foto do agente" class="${sizeClass} ${shapeClass} object-cover shrink-0 border" />`
+        : `<div class="${sizeClass} ${shapeClass} flex items-center justify-center font-mono font-bold text-sm shrink-0 border" style="background:${theme.soft}; border-color:${theme.border}; color:${theme.accent}">${safeInitials}</div>`;
     }
 
     function applyRemoteAgentToRoster(agent) {

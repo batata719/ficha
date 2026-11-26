@@ -21,6 +21,9 @@
       document.getElementById('char-affinity').value = state.affinity;
       document.getElementById('char-nex').value = state.nex;
       document.getElementById('char-pp').value = state.pp || 0;
+      const avatarMarkup = getAgentAvatarMarkup(state, 'w-16 h-16', 'rounded-full');
+      document.getElementById('sheet-agent-avatar-mobile').innerHTML = avatarMarkup;
+      document.getElementById('sheet-agent-avatar-desktop').innerHTML = avatarMarkup;
 
       const pathSelect = document.getElementById('char-path');
       const paths = Object.keys(CLASSES_DB[state.charClass].paths);

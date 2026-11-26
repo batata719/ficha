@@ -399,6 +399,7 @@
     <div class="max-w-7xl mx-auto px-4 py-3.5 space-y-3">
       <!-- MOBILE COMPACT IDENTITY HEADER -->
       <div class="flex md:hidden items-center justify-between gap-2">
+        <div id="sheet-agent-avatar-mobile" class="shrink-0"></div>
         <div class="min-w-0 flex-1">
           <div class="flex items-center gap-2">
             <span id="mob-header-name" class="font-bold text-sm text-white truncate">Novo Agente</span>
@@ -415,8 +416,9 @@
       <div id="header-identity-fields" class="hidden md:grid grid-cols-1 lg:grid-cols-12 gap-3 items-end">
         
         <!-- Name, Player, Origin -->
-        <div class="lg:col-span-5 grid grid-cols-1 sm:grid-cols-12 gap-2.5">
-          <div class="sm:col-span-5">
+        <div class="lg:col-span-6 grid grid-cols-1 sm:grid-cols-12 gap-2.5">
+          <div id="sheet-agent-avatar-desktop" class="sm:col-span-2 flex items-center justify-center"></div>
+          <div class="sm:col-span-4">
             <label class="block text-[10px] uppercase tracking-wider text-zinc-500 font-semibold mb-1">Nome do Agente</label>
             <input type="text" id="char-name" placeholder="Ex: Arthur Cervero" oninput="updateField('name', this.value)"
               class="w-full bg-void border border-borderSubtle focus:border-zinc-500 rounded-lg px-2.5 py-1.5 text-sm font-semibold text-white outline-none transition" />
@@ -426,7 +428,7 @@
             <input type="text" id="char-player" placeholder="Jogador" oninput="updateField('player', this.value)"
               class="w-full bg-void border border-borderSubtle focus:border-zinc-500 rounded-lg px-2.5 py-1.5 text-sm text-zinc-200 outline-none transition" />
           </div>
-          <div class="sm:col-span-4">
+          <div class="sm:col-span-3">
             <label class="block text-[10px] uppercase tracking-wider text-zinc-500 font-semibold mb-1">Origem (26 Oficiais)</label>
             <select id="char-origin" onchange="selectOrigin(this.value)"
               class="w-full bg-void border border-borderSubtle focus:border-zinc-500 rounded-lg px-2 py-1.5 text-sm text-zinc-200 outline-none transition">
@@ -436,7 +438,7 @@
         </div>
 
         <!-- Class, Path, Patent, Affinity, NEX, PP -->
-        <div class="lg:col-span-7 grid grid-cols-2 sm:grid-cols-12 gap-2.5">
+        <div class="lg:col-span-6 grid grid-cols-2 sm:grid-cols-12 gap-2.5">
           <div class="sm:col-span-3">
             <label class="block text-[10px] uppercase tracking-wider text-zinc-500 font-semibold mb-1">Classe</label>
             <select id="char-class" onchange="selectClass(this.value)"
@@ -2620,7 +2622,7 @@
       showToast('Foto Removida', `A foto de ${targetAgent.name || 'agente'} foi removida.`, '✓');
     }
 
-    function getAgentAvatarMarkup(agent, sizeClass = 'w-11 h-11') {
+    function getAgentAvatarMarkup(agent, sizeClass = 'w-11 h-11', shapeClass = 'rounded-xl') {
       const initials = (agent.name || 'AG').trim().split(/\s+/).slice(0, 2).map(word => word[0]?.toUpperCase() || '').join('') || 'AG';
       const avatar = typeof agent.avatar === 'string' && agent.avatar.startsWith('data:image/jpeg;base64,')
         ? agent.avatar.replace(/[&"<>]/g, character => ({ '&': '&amp;', '"': '&quot;', '<': '&lt;', '>': '&gt;' })[character])
@@ -2628,8 +2630,8 @@
       const theme = ELEMENT_THEMES[agent.affinity] || ELEMENT_THEMES['Nenhuma'];
       const safeInitials = initials.replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
       return avatar
-        ? `<img src="${avatar}" alt="Foto do agente" class="${sizeClass} rounded-xl object-cover shrink-0 border" />`
-        : `<div class="${sizeClass} rounded-xl flex items-center justify-center font-mono font-bold text-sm shrink-0 border" style="background:${theme.soft}; border-color:${theme.border}; color:${theme.accent}">${safeInitials}</div>`;
+        ? `<img src="${avatar}" alt="Foto do agente" class="${sizeClass} ${shapeClass} object-cover shrink-0 border" />`
+        : `<div class="${sizeClass} ${shapeClass} flex items-center justify-center font-mono font-bold text-sm shrink-0 border" style="background:${theme.soft}; border-color:${theme.border}; color:${theme.accent}">${safeInitials}</div>`;
     }
 
     function applyRemoteAgentToRoster(agent) {
@@ -3354,6 +3356,10 @@
       document.getElementById('char-affinity').value = state.affinity;
       document.getElementById('char-nex').value = state.nex;
       document.getElementById('char-pp').value = state.pp || 0;
+      const avatarMarkup = getAgentAvatarMarkup(state, 'w-16 h-16', 'rounded-full');
+      document.getElementById('sheet-agent-avatar-mobile').innerHTML = avatarMarkup;
+      document.getElementById('sheet-agent-avatar-desktop').innerHTML = avatarMarkup;
+
       const pathSelect = document.getElementById('char-path');
       const paths = Object.keys(CLASSES_DB[state.charClass].paths);
       pathSelect.innerHTML = paths.map(p => `<option value="${p}" ${state.path === p ? 'selected' : ''}>${p}</option>`).join('');
