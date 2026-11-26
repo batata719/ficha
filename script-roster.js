@@ -16,6 +16,7 @@
         id: generateAgentId(),
         updatedAt: Date.now(),
         name: 'Novo Agente',
+        avatar: '',
         player: '',
         origin: 'Personalizada',
         charClass: 'Combatente',
@@ -238,6 +239,77 @@
       }
     }
 
+    function uploadAgentAvatar(event) {
+      const file = event.target.files?.[0];
+      const targetAgentId = event.currentTarget.dataset.agentId || state.id;
+      event.target.value = '';
+      if (!file) return;
+      if (!file.type.startsWith('image/')) {
+        showToast('Imagem Inválida', 'Escolha um arquivo de imagem.', 'ERRO');
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        showToast('Imagem Muito Grande', 'A imagem deve ter no máximo 5 MB.', 'ERRO');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onerror = () => showToast('Erro ao Ler Imagem', 'Não foi possível abrir esse arquivo.', 'ERRO');
+      reader.onload = () => {
+        const image = new Image();
+        image.onerror = () => showToast('Imagem Inválida', 'Não foi possível processar esse arquivo de imagem.', 'ERRO');
+        image.onload = () => {
+          const ratio = Math.min(1, 320 / Math.max(image.naturalWidth, image.naturalHeight));
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.max(1, Math.round(image.naturalWidth * ratio));
+          canvas.height = Math.max(1, Math.round(image.naturalHeight * ratio));
+          const context = canvas.getContext('2d');
+          if (!context) {
+            showToast('Erro ao Processar Imagem', 'Seu navegador não conseguiu redimensionar a imagem.', 'ERRO');
+            return;
+          }
+          context.drawImage(image, 0, 0, canvas.width, canvas.height);
+          const targetAgent = rosterData.agents.find(agent => agent.id === targetAgentId);
+          if (!targetAgent) {
+            showToast('Agente Não Encontrado', 'A ficha selecionada foi removida antes da imagem terminar de carregar.', 'ERRO');
+            return;
+          }
+          targetAgent.avatar = canvas.toDataURL('image/jpeg', 0.76);
+          targetAgent.updatedAt = Date.now();
+          if (state.id === targetAgentId) state.avatar = targetAgent.avatar;
+          saveState();
+          if (rosterData.view === 'hub') renderHub();
+          showToast('Foto Atualizada', `Foto de ${targetAgent.name || 'agente'} salva na ficha.`, '📷');
+        };
+        image.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function removeAgentAvatar(event) {
+      const targetAgentId = event.currentTarget.dataset.agentId || state.id;
+      const targetAgent = rosterData.agents.find(agent => agent.id === targetAgentId);
+      if (!targetAgent?.avatar) return;
+      targetAgent.avatar = '';
+      targetAgent.updatedAt = Date.now();
+      if (state.id === targetAgentId) state.avatar = '';
+      saveState();
+      if (rosterData.view === 'hub') renderHub();
+      showToast('Foto Removida', `A foto de ${targetAgent.name || 'agente'} foi removida.`, '✓');
+    }
+
+    function getAgentAvatarMarkup(agent, sizeClass = 'w-11 h-11') {
+      const initials = (agent.name || 'AG').trim().split(/\s+/).slice(0, 2).map(word => word[0]?.toUpperCase() || '').join('') || 'AG';
+      const avatar = typeof agent.avatar === 'string' && agent.avatar.startsWith('data:image/jpeg;base64,')
+        ? agent.avatar.replace(/[&"<>]/g, character => ({ '&': '&amp;', '"': '&quot;', '<': '&lt;', '>': '&gt;' })[character])
+        : '';
+      const theme = ELEMENT_THEMES[agent.affinity] || ELEMENT_THEMES['Nenhuma'];
+      const safeInitials = initials.replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
+      return avatar
+        ? `<img src="${avatar}" alt="Foto do agente" class="${sizeClass} rounded-xl object-cover shrink-0 border" />`
+        : `<div class="${sizeClass} rounded-xl flex items-center justify-center font-mono font-bold text-sm shrink-0 border" style="background:${theme.soft}; border-color:${theme.border}; color:${theme.accent}">${safeInitials}</div>`;
+    }
+
     function applyRemoteAgentToRoster(agent) {
       const index = rosterData.agents.findIndex((localAgent) => localAgent.id === agent.id);
       if (index < 0) return;
@@ -346,13 +418,6 @@
       const agentCardsHtml = filtered.map(ag => {
         const theme = ELEMENT_THEMES[ag.affinity] || ELEMENT_THEMES['Nenhuma'];
         const snap = computeAgentSnapshotStats(ag);
-        const initials = (ag.name || 'AG')
-          .trim()
-          .split(/\s+/)
-          .slice(0, 2)
-          .map(w => w[0]?.toUpperCase() || '')
-          .join('') || 'AG';
-
         const pvPct = Math.min(100, Math.max(0, Math.round(((ag.currentPv ?? snap.maxPv) / snap.maxPv) * 100)));
         const pePct = Math.min(100, Math.max(0, Math.round(((ag.currentPe ?? snap.maxPe) / snap.maxPe) * 100)));
         const sanPct = Math.min(100, Math.max(0, Math.round(((ag.currentSan ?? snap.maxSan) / snap.maxSan) * 100)));
@@ -367,9 +432,13 @@
               <!-- Card Top: Avatar + Identity + NEX -->
               <div class="flex items-start justify-between gap-3">
                 <div class="flex items-center gap-3 min-w-0">
-                  <div class="w-11 h-11 rounded-xl flex items-center justify-center font-mono font-bold text-sm shrink-0 border"
-                    style="background:${theme.soft}; border-color:${theme.border}; color:${theme.accent}">
-                    ${initials}
+                  <div class="relative group shrink-0">
+                    <label title="Alterar foto do agente" class="relative block cursor-pointer rounded-xl focus-within:ring-2 focus-within:ring-purple-400">
+                      ${getAgentAvatarMarkup(ag)}
+                      <span class="pointer-events-none absolute inset-0 rounded-xl bg-black/50 flex items-center justify-center text-lg opacity-0 group-hover:opacity-100 transition">📷</span>
+                      <input type="file" accept="image/*" data-agent-id="${ag.id}" onchange="uploadAgentAvatar(event)" class="hidden" />
+                    </label>
+                    ${ag.avatar ? `<button type="button" data-agent-id="${ag.id}" onclick="removeAgentAvatar(event)" title="Remover foto" class="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-700 hover:bg-red-600 text-white text-xs opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition">×</button>` : ''}
                   </div>
                   <div class="min-w-0">
                     <h3 class="font-bold text-base text-white truncate">${ag.name || 'Agente Sem Nome'}</h3>

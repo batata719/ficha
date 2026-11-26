@@ -562,6 +562,16 @@ window.__multiplayerReady = (async () => {
       }
     }
 
+    function renderRoomAgentAvatar(agent) {
+      const avatar = typeof agent.avatar === "string" && agent.avatar.startsWith("data:image/jpeg;base64,")
+        ? agent.avatar.replace(/[&"<>]/g, character => ({ "&": "&amp;", '"': "&quot;", "<": "&lt;", ">": "&gt;" })[character])
+        : "";
+      if (avatar) return `<img src="${avatar}" alt="Foto do agente" class="w-12 h-12 rounded-xl object-cover shrink-0 border border-borderSubtle" />`;
+      const initials = (agent.name || "AG").trim().split(/\s+/).slice(0, 2).map((word) => word[0]?.toUpperCase() || "").join("") || "AG";
+      const safeInitials = initials.replace(/[&<>"']/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]);
+      return `<div class="w-12 h-12 rounded-xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center font-mono font-bold text-sm text-purple-300 shrink-0">${safeInitials}</div>`;
+    }
+
     function renderSessionModalBody() {
       const body = document.getElementById("session-modal-body");
       if (!body) return;
@@ -731,10 +741,13 @@ window.__multiplayerReady = (async () => {
                       return `
                         <div class="bg-void border border-borderSubtle hover:border-purple-500/50 rounded-2xl p-4 space-y-3 transition">
                           <div class="flex items-start justify-between gap-2">
-                            <div>
-                              <h5 class="font-bold text-sm text-white">${ag.name || "Agente Sem Nome"}</h5>
-                              <p class="text-[11px] text-zinc-400">${ag.charClass} • ${ag.path} • NEX ${ag.nex}%</p>
-                              <p class="text-[10px] font-mono text-zinc-500">Jogador: ${ag.playerAlias || ag.player || "—"} • Origem: ${ag.origin}</p>
+                            <div class="flex items-center gap-3 min-w-0">
+                              ${renderRoomAgentAvatar(ag)}
+                              <div class="min-w-0">
+                                <h5 class="font-bold text-sm text-white">${ag.name || "Agente Sem Nome"}</h5>
+                                <p class="text-[11px] text-zinc-400">${ag.charClass} • ${ag.path} • NEX ${ag.nex}%</p>
+                                <p class="text-[10px] font-mono text-zinc-500">Jogador: ${ag.playerAlias || ag.player || "—"} • Origem: ${ag.origin}</p>
+                              </div>
                             </div>
                             <div class="text-right font-mono text-xs">
                               <span class="block px-2 py-0.5 rounded bg-elevated text-white font-bold">Def ${st.defense}</span>
