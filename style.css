@@ -305,9 +305,16 @@
         top: 0;
         z-index: 45;
         padding: 0.5rem 0.75rem;
+        transition: transform 0.2s ease;
         background: color-mix(in srgb, var(--bg-surface) 94%, transparent);
         backdrop-filter: blur(14px);
         -webkit-backdrop-filter: blur(14px);
+      }
+      .site-utility-bar.is-scroll-hidden {
+        transform: translateY(-100%);
+      }
+      body.mobile-utility-hidden #sheet-view > header {
+        top: 0;
       }
       .site-utility-bar > div {
         gap: 0.5rem;
@@ -412,6 +419,12 @@
       #mobile-bottom-nav .tab-active {
         border-bottom: 0;
         border-radius: 0.9rem;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .site-utility-bar {
+        transition: none;
       }
     }
 

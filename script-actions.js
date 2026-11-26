@@ -697,6 +697,64 @@
       }
     }
 // ==================== MOBILE-FIRST HELPERS ====================
+    function initMobileUtilityBarAutoHide() {
+      const utilityBar = document.querySelector('.site-utility-bar');
+      if (!utilityBar) return;
+
+      const mobileViewport = window.matchMedia('(max-width: 767px)');
+      let previousScrollY = window.scrollY;
+      let scrollDirection = 0;
+      let scrollDistance = 0;
+      let framePending = false;
+
+      const setHidden = (hidden) => {
+        utilityBar.classList.toggle('is-scroll-hidden', hidden);
+        document.body.classList.toggle('mobile-utility-hidden', hidden);
+      };
+
+      const handleScroll = () => {
+        if (framePending) return;
+        framePending = true;
+        window.requestAnimationFrame(() => {
+          framePending = false;
+          const currentScrollY = Math.max(0, window.scrollY);
+          if (!mobileViewport.matches) {
+            setHidden(false);
+            previousScrollY = currentScrollY;
+            return;
+          }
+
+          const delta = currentScrollY - previousScrollY;
+          previousScrollY = currentScrollY;
+          if (currentScrollY <= 32) {
+            setHidden(false);
+            scrollDirection = 0;
+            scrollDistance = 0;
+            return;
+          }
+          if (delta === 0) return;
+
+          const nextDirection = Math.sign(delta);
+          if (nextDirection !== scrollDirection) {
+            scrollDirection = nextDirection;
+            scrollDistance = 0;
+          }
+          scrollDistance += Math.abs(delta);
+
+          if (scrollDirection > 0 && scrollDistance >= 12) setHidden(true);
+          if (scrollDirection < 0 && scrollDistance >= 8) setHidden(false);
+        });
+      };
+
+      window.addEventListener('scroll', handleScroll, { passive: true });
+      mobileViewport.addEventListener('change', () => {
+        setHidden(false);
+        previousScrollY = window.scrollY;
+        scrollDirection = 0;
+        scrollDistance = 0;
+      });
+    }
+
     function toggleMobileHeaderFields() {
       const fields = document.getElementById('header-identity-fields');
       const btn = document.getElementById('btn-toggle-mob-header');

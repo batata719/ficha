@@ -558,6 +558,7 @@
     // ==================== INITIALIZATION ====================
     window.addEventListener('DOMContentLoaded', () => {
       importAgentFromShareLink();
+      initMobileUtilityBarAutoHide();
       initSiteTheme();
       initStaticDropdowns();
       applyViewVisibility();
