@@ -42,6 +42,9 @@ window.__multiplayerReady = (async () => {
     let roomRollsCache = [];
     let inspectedAgentId = null;
     let suppressRoomSync = false;
+    let gmAgentSearch = "";
+    let gmAgentClassFilter = "Todas";
+    let gmAgentSort = "name";
 
     function loadSessionMeta() {
       try {
@@ -428,6 +431,59 @@ window.__multiplayerReady = (async () => {
       if (inspectedAgentId === agentId) inspectedAgentId = null;
     }
 
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>"']/g, (character) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      })[character]);
+    }
+
+    async function adjustInspectedAgentResource(agentId, resource, delta) {
+      if (sessionState.role !== "gm" || !currentUser || !sessionState.roomCode) return;
+      const allowedResources = {
+        currentPv: "PV",
+        currentPe: "PE",
+        currentSan: "SAN"
+      };
+      if (!allowedResources[resource] || !Number.isInteger(delta)) return;
+
+      try {
+        const roomRef = doc(db, "sessions", sessionState.roomCode);
+        const agentRef = doc(db, "sessions", sessionState.roomCode, "agents", agentId);
+        await runTransaction(db, async (transaction) => {
+          const roomSnap = await transaction.get(roomRef);
+          if (!roomSnap.exists() || roomSnap.data().gmUid !== currentUser.uid) {
+            throw new Error("Esta conta não é o Mestre proprietário da sala.");
+          }
+          const agentSnap = await transaction.get(agentRef);
+          if (!agentSnap.exists()) throw new Error("A ficha não está mais nesta sala.");
+
+          const agent = agentSnap.data();
+          const summary = computeGMAgentSummary(agent);
+          const maxByResource = {
+            currentPv: summary.maxPv,
+            currentPe: summary.maxPe,
+            currentSan: summary.maxSan
+          };
+          const currentValue = Number(agent[resource] ?? maxByResource[resource]) || 0;
+          const nextValue = Math.max(0, Math.min(maxByResource[resource], currentValue + delta));
+
+          transaction.update(agentRef, {
+            [resource]: nextValue,
+            gmRevision: (Number(agent.gmRevision) || 0) + 1,
+            gmEditedByUid: currentUser.uid,
+            gmEditedAt: Date.now()
+          });
+        });
+      } catch (err) {
+        console.error("[Ordo Sync] Erro no ajuste rápido:", err);
+        alertModalInfo(`Não foi possível ajustar o recurso: ${err.message || err}`);
+      }
+    }
+
     function connectToRoomListeners(roomCode) {
       if (unsubscribeRoomAgents) unsubscribeRoomAgents();
       if (unsubscribeRoomRolls) unsubscribeRoomRolls();
@@ -682,8 +738,8 @@ window.__multiplayerReady = (async () => {
               ${roomAgentsCache.map(ag => `
                 <div class="bg-void border border-borderSubtle rounded-xl p-3 flex items-center justify-between">
                   <div>
-                    <div class="font-bold text-sm text-white">${ag.name || "Sem Nome"}</div>
-                    <div class="text-[11px] text-zinc-400">${ag.charClass} • NEX ${ag.nex}% (${ag.playerAlias || "Jogador"})</div>
+                    <div class="font-bold text-sm text-white">${escapeHtml(ag.name || "Sem Nome")}</div>
+                    <div class="text-[11px] text-zinc-400">${escapeHtml(ag.charClass)} • NEX ${escapeHtml(ag.nex)}% (${escapeHtml(ag.playerAlias || "Jogador")})</div>
                   </div>
                   <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400">Online</span>
                 </div>
@@ -695,6 +751,40 @@ window.__multiplayerReady = (async () => {
       }
 
       const inspectedAgent = roomAgentsCache.find((a) => a.id === inspectedAgentId) || null;
+      const gmFilteredAgents = roomAgentsCache
+        .filter((ag) => {
+          const search = gmAgentSearch.toLocaleLowerCase("pt-BR");
+          const matchesSearch = !search || [
+            ag.name,
+            ag.player,
+            ag.playerAlias,
+            ag.charClass,
+            ag.path,
+            ag.origin
+          ].some((value) => String(value || "").toLocaleLowerCase("pt-BR").includes(search));
+          const matchesClass = gmAgentClassFilter === "Todas" || ag.charClass === gmAgentClassFilter;
+          return matchesSearch && matchesClass;
+        })
+        .sort((a, b) => {
+          if (gmAgentSort === "danger") {
+            const sa = computeGMAgentSummary(a);
+            const sb = computeGMAgentSummary(b);
+            const pa = Math.max(0, ((a.currentPv ?? sa.maxPv) / sa.maxPv));
+            const pb = Math.max(0, ((b.currentPv ?? sb.maxPv) / sb.maxPv));
+            return pa - pb;
+          }
+          if (gmAgentSort === "nex") return (Number(b.nex) || 0) - (Number(a.nex) || 0);
+          return String(a.name || "").localeCompare(String(b.name || ""));
+        });
+      const criticalAgents = roomAgentsCache.filter((ag) => {
+        const st = computeGMAgentSummary(ag);
+        return (ag.currentPv ?? st.maxPv) <= Math.max(1, Math.floor(st.maxPv * 0.25));
+      }).length;
+      const lowSanAgents = roomAgentsCache.filter((ag) => {
+        const st = computeGMAgentSummary(ag);
+        return (ag.currentSan ?? st.maxSan) <= Math.max(1, Math.floor(st.maxSan * 0.25));
+      }).length;
+      const recentRollCount = roomRollsCache.filter((roll) => roll.timestamp && Date.now() - roll.timestamp < 10 * 60 * 1000).length;
 
       body.innerHTML = `
         <div class="bg-void border border-purple-500/40 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-4">
@@ -720,39 +810,81 @@ window.__multiplayerReady = (async () => {
           </button>
         </div>
 
+        ${inspectedAgent ? "" : `
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+            <div class="bg-surface border border-borderSubtle rounded-xl px-3 py-2">
+              <span class="block text-[9px] uppercase tracking-wider text-zinc-500">Conectados</span>
+              <strong class="font-mono text-lg text-white">${roomAgentsCache.length}</strong>
+            </div>
+            <div class="bg-surface border border-rose-500/20 rounded-xl px-3 py-2">
+              <span class="block text-[9px] uppercase tracking-wider text-zinc-500">PV crítico</span>
+              <strong class="font-mono text-lg text-rose-300">${criticalAgents}</strong>
+            </div>
+            <div class="bg-surface border border-sky-500/20 rounded-xl px-3 py-2">
+              <span class="block text-[9px] uppercase tracking-wider text-zinc-500">SAN crítica</span>
+              <strong class="font-mono text-lg text-sky-300">${lowSanAgents}</strong>
+            </div>
+            <div class="bg-surface border border-amber-500/20 rounded-xl px-3 py-2">
+              <span class="block text-[9px] uppercase tracking-wider text-zinc-500">Rolagens 10 min</span>
+              <strong class="font-mono text-lg text-amber-300">${recentRollCount}</strong>
+            </div>
+          </div>
+        `}
+
         ${inspectedAgent ? renderInspectedAgentFullSheet(inspectedAgent) : `
           <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
             <div class="lg:col-span-8 space-y-3">
+              <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2 bg-surface border border-borderSubtle rounded-xl p-2.5">
+                <input id="gm-agent-search" type="search" value="${escapeHtml(gmAgentSearch)}" placeholder="Buscar agente ou jogador..."
+                  class="sm:col-span-2 bg-void border border-borderSubtle rounded-lg px-3 py-2 text-xs text-white outline-none" />
+                <select id="gm-agent-class-filter" class="bg-void border border-borderSubtle rounded-lg px-2 py-2 text-xs text-zinc-200 outline-none">
+                  ${["Todas", "Combatente", "Especialista", "Ocultista"].map((value) => `<option value="${value}" ${gmAgentClassFilter === value ? "selected" : ""}>${value === "Todas" ? "Todas as classes" : value}</option>`).join("")}
+                </select>
+                <select id="gm-agent-sort" class="bg-void border border-borderSubtle rounded-lg px-2 py-2 text-xs text-zinc-200 outline-none">
+                  <option value="name" ${gmAgentSort === "name" ? "selected" : ""}>Nome</option>
+                  <option value="danger" ${gmAgentSort === "danger" ? "selected" : ""}>PV mais baixo</option>
+                  <option value="nex" ${gmAgentSort === "nex" ? "selected" : ""}>Maior NEX</option>
+                </select>
+              </div>
               <h4 class="text-xs font-semibold uppercase tracking-wider text-zinc-400">
-                Fichas dos Agentes Conectados (${roomAgentsCache.length})
+                Fichas dos Agentes Conectados (${gmFilteredAgents.length}/${roomAgentsCache.length})
               </h4>
-              ${roomAgentsCache.length === 0
+              ${gmFilteredAgents.length === 0
                 ? `<div class="bg-void border border-dashed border-borderSubtle rounded-2xl p-8 text-center text-xs text-zinc-500">
-                    Aguardando jogadores entrarem com o código <strong class="accent-text font-mono">${sessionState.roomCode}</strong>...
+                    ${roomAgentsCache.length === 0
+                      ? `Aguardando jogadores entrarem com o código <strong class="accent-text font-mono">${sessionState.roomCode}</strong>...`
+                      : "Nenhum agente corresponde aos filtros atuais."}
                   </div>`
                 : `<div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    ${roomAgentsCache.map((ag) => {
+                    ${gmFilteredAgents.map((ag) => {
                       const st = computeGMAgentSummary(ag);
                       const pvPct = Math.min(100, Math.max(0, Math.round(((ag.currentPv ?? st.maxPv) / st.maxPv) * 100)));
                       const pePct = Math.min(100, Math.max(0, Math.round(((ag.currentPe ?? st.maxPe) / st.maxPe) * 100)));
                       const sanPct = Math.min(100, Math.max(0, Math.round(((ag.currentSan ?? st.maxSan) / st.maxSan) * 100)));
                       const attrs = ag.attributes || { AGI: 1, FOR: 1, INT: 1, PRE: 1, VIG: 1 };
+                      const statusLabel = pvPct <= 25 ? "PV crítico" : pvPct <= 50 ? "Machucado" : "Estável";
+                      const statusClass = pvPct <= 25 ? "bg-rose-500/15 text-rose-300 border-rose-500/30" : pvPct <= 50 ? "bg-amber-500/15 text-amber-300 border-amber-500/30" : "bg-emerald-500/15 text-emerald-300 border-emerald-500/30";
+                      const lastSync = ag.syncedAt ? new Date(ag.syncedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "Sem registro";
 
                       return `
-                        <div class="bg-void border border-borderSubtle hover:border-purple-500/50 rounded-2xl p-4 space-y-3 transition">
+                        <div class="gm-agent-card bg-void border ${pvPct <= 25 ? "border-rose-500/50" : "border-borderSubtle"} hover:border-purple-500/50 rounded-2xl p-4 space-y-3 transition">
                           <div class="flex items-start justify-between gap-2">
                             <div class="flex items-center gap-3 min-w-0">
                               ${renderRoomAgentAvatar(ag)}
                               <div class="min-w-0">
-                                <h5 class="font-bold text-sm text-white">${ag.name || "Agente Sem Nome"}</h5>
-                                <p class="text-[11px] text-zinc-400">${ag.charClass} • ${ag.path} • NEX ${ag.nex}%</p>
-                                <p class="text-[10px] font-mono text-zinc-500">Jogador: ${ag.playerAlias || ag.player || "—"} • Origem: ${ag.origin}</p>
+                                <h5 class="font-bold text-sm text-white">${escapeHtml(ag.name || "Agente Sem Nome")}</h5>
+                                <p class="text-[11px] text-zinc-400">${escapeHtml(ag.charClass)} • ${escapeHtml(ag.path)} • NEX ${escapeHtml(ag.nex)}%</p>
+                                <p class="text-[10px] font-mono text-zinc-500">Jogador: ${escapeHtml(ag.playerAlias || ag.player || "—")} • Origem: ${escapeHtml(ag.origin)}</p>
                               </div>
                             </div>
                             <div class="text-right font-mono text-xs">
                               <span class="block px-2 py-0.5 rounded bg-elevated text-white font-bold">Def ${st.defense}</span>
                               <span class="block text-[10px] text-zinc-400 mt-1">DT ${st.ritualDt}</span>
                             </div>
+                          </div>
+                          <div class="flex items-center justify-between gap-2">
+                            <span class="text-[9px] px-2 py-0.5 rounded border ${statusClass}">${statusLabel}</span>
+                            <span class="text-[9px] text-zinc-500">Última ficha: ${lastSync}</span>
                           </div>
 
                           <div class="space-y-1.5 text-[11px] font-mono">
@@ -785,6 +917,20 @@ window.__multiplayerReady = (async () => {
                                 </div>
                               </div>
                             </div>
+                          </div>
+
+                          <div class="grid grid-cols-3 gap-2 text-[10px]">
+                            ${[
+                              ["currentPv", "PV"],
+                              ["currentPe", "PE"],
+                              ["currentSan", "SAN"]
+                            ].map(([resource, label]) => `
+                              <div class="flex items-center justify-between gap-1 bg-surface border border-borderSubtle rounded-lg px-1.5 py-1">
+                                <button type="button" data-resource="${resource}" data-delta="-1" data-agent-id="${escapeHtml(ag.id)}" title="Reduzir ${label}" class="btn-gm-resource px-1.5 py-0.5 rounded bg-elevated text-zinc-200 hover:bg-zinc-700">−1</button>
+                                <strong class="text-zinc-300">${label}</strong>
+                                <button type="button" data-resource="${resource}" data-delta="1" data-agent-id="${escapeHtml(ag.id)}" title="Adicionar ${label}" class="btn-gm-resource px-1.5 py-0.5 rounded bg-elevated text-zinc-200 hover:bg-zinc-700">+1</button>
+                              </div>
+                            `).join("")}
                           </div>
 
                           <div class="grid grid-cols-5 gap-1 text-center font-mono text-[11px] bg-surface rounded-lg p-1.5 border border-borderSubtle">
@@ -820,9 +966,9 @@ window.__multiplayerReady = (async () => {
                   : roomRollsCache.map(r => `
                     <div class="bg-surface border ${r.isCrit ? "border-amber-400/50" : r.isFumble ? "border-rose-500/50" : "border-borderSubtle"} rounded-xl p-2.5 flex items-center justify-between gap-2">
                       <div class="min-w-0">
-                        <div class="text-[11px] font-bold accent-text truncate">${r.agentName}</div>
-                        <div class="text-xs text-white truncate">${r.title}</div>
-                        <div class="text-[10px] font-mono text-zinc-400 truncate">${r.detail}</div>
+                        <div class="text-[11px] font-bold accent-text truncate">${escapeHtml(r.agentName)}</div>
+                        <div class="text-xs text-white truncate">${escapeHtml(r.title)}</div>
+                        <div class="text-[10px] font-mono text-zinc-400 truncate">${escapeHtml(r.detail)}</div>
                       </div>
                       <span class="font-mono text-base font-bold ${r.isCrit ? "text-amber-300" : r.isFumble ? "text-rose-400" : "text-white"} shrink-0">
                         ${r.result}
@@ -860,8 +1006,8 @@ window.__multiplayerReady = (async () => {
           <div class="flex flex-wrap items-center justify-between gap-3 border-b border-borderSubtle pb-3">
             <div>
               <button type="button" id="btn-gm-back-overview" class="text-xs accent-text hover:underline mb-1">← Voltar para todas as fichas</button>
-              <h4 class="text-lg font-bold text-white">${ag.name} <span class="text-xs font-mono text-zinc-400">(${ag.charClass} • ${ag.path} • NEX ${ag.nex}%)</span></h4>
-              <p class="text-xs text-zinc-400">Origem: ${ag.origin} • Patente: ${ag.rank} • Afinidade: ${ag.affinity || "Nenhuma"}</p>
+              <h4 class="text-lg font-bold text-white">${escapeHtml(ag.name)} <span class="text-xs font-mono text-zinc-400">(${escapeHtml(ag.charClass)} • ${escapeHtml(ag.path)} • NEX ${escapeHtml(ag.nex)}%)</span></h4>
+              <p class="text-xs text-zinc-400">Origem: ${escapeHtml(ag.origin)} • Patente: ${escapeHtml(ag.rank)} • Afinidade: ${escapeHtml(ag.affinity || "Nenhuma")}</p>
             </div>
             <div class="flex gap-2 font-mono text-xs">
               <span class="px-3 py-1.5 rounded-xl bg-rose-500/15 text-rose-300 border border-rose-500/30">PV: ${ag.currentPv}/${st.maxPv}</span>
@@ -1015,6 +1161,24 @@ window.__multiplayerReady = (async () => {
     }
 
     // Delegação global de cliques para todos os botões da Mesa / Escudo do Mestre
+    document.addEventListener("input", (e) => {
+      if (e.target?.id === "gm-agent-search") {
+        gmAgentSearch = e.target.value;
+        renderSessionModalBody();
+        const searchInput = document.getElementById("gm-agent-search");
+        searchInput?.focus();
+        if (searchInput) searchInput.setSelectionRange(gmAgentSearch.length, gmAgentSearch.length);
+      }
+    });
+    document.addEventListener("change", (e) => {
+      if (e.target?.id === "gm-agent-class-filter") {
+        gmAgentClassFilter = e.target.value;
+        renderSessionModalBody();
+      } else if (e.target?.id === "gm-agent-sort") {
+        gmAgentSort = e.target.value;
+        renderSessionModalBody();
+      }
+    });
     document.addEventListener("click", (e) => {
       const target = e.target.closest("button");
       if (!target) return;
@@ -1064,6 +1228,11 @@ window.__multiplayerReady = (async () => {
       } else if (target.id === "btn-gm-back-overview") {
         inspectedAgentId = null;
         renderSessionModalBody();
+      } else if (target.classList.contains("btn-gm-resource")) {
+        const agentId = target.getAttribute("data-agent-id");
+        const resource = target.getAttribute("data-resource");
+        const delta = Number(target.getAttribute("data-delta"));
+        adjustInspectedAgentResource(agentId, resource, delta);
       }
     });
     document.addEventListener("submit", (e) => {
